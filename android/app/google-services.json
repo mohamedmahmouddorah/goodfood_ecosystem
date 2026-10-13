@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1002420346777",
+    "project_id": "goodfood-ecosystem",
+    "storage_bucket": "goodfood-ecosystem.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1002420346777:android:217cb6c52aafd848c4fd08",
+        "android_client_info": {
+          "package_name": "com.example.goodfood_ecosystem"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAm0X6Q5zDPFwFAfDJfrdGSxrSPUd3QCkE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
