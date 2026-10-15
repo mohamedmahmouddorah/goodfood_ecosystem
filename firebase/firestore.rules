@@ -1,0 +1,26 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Admin = custom claim `admin: true` on the Firebase Auth token.
+    // Costs 0 extra reads (unlike reading a users/{uid} doc inside the rule).
+    function isAdmin() {
+      return request.auth != null && request.auth.token.admin == true;
+    }
+
+    function validMeal() {
+      let d = request.resource.data;
+      return d.name is string && d.name.size() > 0 && d.name.size() <= 80
+          && d.price is number && d.price >= 0
+          && d.category in ['starters', 'main_course', 'drinks', 'desserts']
+          && d.isAvailable is bool;
+    }
+
+    match /meals/{mealId} {
+      // Customers only ever see visible meals; admin sees everything.
+      allow read: if resource.data.isAvailable == true || isAdmin();
+      allow create, update: if isAdmin() && validMeal();
+      allow delete: if isAdmin();
+    }
+  }
+}

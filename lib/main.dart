@@ -1,6 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+
+import 'features/menu/data/repositories/menu_repository.dart';
+import 'features/menu/data/services/menu_remote_service.dart';
+import 'features/menu/data/services/menu_api_service.dart';
+import 'features/menu/presentation/view/menu_screen.dart';
+
 import 'firebase_options.dart';
 
 void main() async {
@@ -22,11 +28,16 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         useMaterial3: true,
         colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF6750A4),
-          brightness: Brightness.light,
+          seedColor: const Color(0xFFF5B84A),
+          brightness: Brightness.dark,
         ),
       ),
-      home: const TestFirebaseScreen(),
+      home: MenuScreen(
+        repository: MenuRepository(
+          MenuRemoteService(FirebaseFirestore.instance),
+          menuApiService: MenuApiService(),
+        ),
+      ),
     );
   }
 }
