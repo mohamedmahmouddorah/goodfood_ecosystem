@@ -6,6 +6,7 @@ import '../../data/models/meal_model.dart';
 import '../view_model/menu_management_cubit.dart';
 import '../widgets/meal_image.dart';
 import '../widgets/menu_palette.dart';
+import 'menu_management_screen.dart';
 
 class AddEditMealScreen extends StatefulWidget {
   const AddEditMealScreen({super.key, this.meal});
@@ -94,7 +95,7 @@ class _AddEditMealScreenState extends State<AddEditMealScreen> {
                         icon: const Icon(Icons.inventory_2_outlined),
                         label: FittedBox(
                           fit: BoxFit.scaleDown,
-                          child: const Text('View added products'),
+                          child: const Text('View saved products'),
                         ),
                         style: OutlinedButton.styleFrom(
                           foregroundColor: MenuPalette.gold,
@@ -445,53 +446,16 @@ class _AddEditMealScreenState extends State<AddEditMealScreen> {
         ),
       );
 
-  bool get _hasUnsavedChanges {
-    final meal = widget.meal;
-    if (meal == null) {
-      return _nameController.text.trim().isNotEmpty ||
-          _descriptionController.text.trim().isNotEmpty ||
-          _priceController.text.trim().isNotEmpty ||
-          _imageUrlController.text.trim().isNotEmpty ||
-          _category != MealCategory.mainCourse ||
-          !_isAvailable;
-    }
-    return _nameController.text.trim() != meal.name ||
-        _descriptionController.text.trim() != meal.description ||
-        _priceController.text.trim() != meal.price.toStringAsFixed(2) ||
-        _imageUrlController.text.trim() != meal.imageUrl ||
-        _category != meal.category ||
-        _isAvailable != meal.isAvailable;
-  }
-
-  Future<void> _viewProducts() async {
-    if (_hasUnsavedChanges) {
-      final discardChanges = await showDialog<bool>(
-        context: context,
-        builder: (dialogContext) => AlertDialog(
-          backgroundColor: MenuPalette.surface,
-          title: const Text(
-            'Discard unsaved changes?',
-            style: TextStyle(color: Colors.white),
-          ),
-          content: const Text(
-            'Your changes will be lost when you return to the product list.',
-            style: TextStyle(color: MenuPalette.muted),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(dialogContext, false),
-              child: const Text('Stay here'),
-            ),
-            TextButton(
-              onPressed: () => Navigator.pop(dialogContext, true),
-              child: const Text('Discard and view products'),
-            ),
-          ],
+  void _viewProducts() {
+    final cubit = context.read<MenuManagementCubit>();
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => MenuManagementScreen(
+          repository: cubit.repository,
+          existingCubit: cubit,
         ),
-      );
-      if (discardChanges != true || !mounted) return;
-    }
-    Navigator.of(context).pop();
+      ),
+    );
   }
 
   Future<void> _save() async {
@@ -512,7 +476,7 @@ class _AddEditMealScreenState extends State<AddEditMealScreen> {
       );
 
       final saveResult = await menuManagementCubit.save(meal);
-      if (saveResult == MealSaveResult.saved && mounted) {
+      if (saveResult != MealSaveResult.failed && mounted) {
         Navigator.of(context).pop();
       }
     } catch (error, stackTrace) {

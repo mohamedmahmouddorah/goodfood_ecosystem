@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -7,8 +9,19 @@ import '../../../menu/presentation/widgets/menu_palette.dart';
 import '../view_model/cart_cubit.dart';
 import '../view_model/cart_state.dart';
 
-class CartScreen extends StatelessWidget {
+class CartScreen extends StatefulWidget {
   const CartScreen({super.key});
+
+  @override
+  State<CartScreen> createState() => _CartScreenState();
+}
+
+class _CartScreenState extends State<CartScreen> {
+  static const _undoDuration = Duration(seconds: 5);
+  final List<CartRemoval> _pendingRemovals = [];
+  Timer? _undoExpiryTimer;
+  int _undoSnackGeneration = 0;
+  bool _undoRequested = false;
 
   @override
   Widget build(BuildContext context) {
@@ -50,7 +63,7 @@ class CartScreen extends StatelessWidget {
                 ? const SizedBox.shrink()
                 : compact
                 ? IconButton(
-                    onPressed: context.read<CartCubit>().clear,
+                    onPressed: () => _clearCart(context),
                     tooltip: 'Clear cart',
                     visualDensity: VisualDensity.compact,
                     constraints: const BoxConstraints.tightFor(
@@ -65,7 +78,7 @@ class CartScreen extends StatelessWidget {
                     ),
                   )
                 : TextButton(
-                    onPressed: context.read<CartCubit>().clear,
+                    onPressed: () => _clearCart(context),
                     child: const Text(
                       'Clear',
                       style: TextStyle(color: MenuPalette.gold),
@@ -86,6 +99,7 @@ class CartScreen extends StatelessWidget {
                 return _itemsList(
                   context,
                   state,
+                  onRemove: _removeItem,
                   footer: Padding(
                     padding: const EdgeInsets.fromLTRB(4, 8, 4, 12),
                     child: _summary(state),
@@ -102,7 +116,11 @@ class CartScreen extends StatelessWidget {
                           children: [
                             Expanded(
                               flex: 7,
-                              child: _itemsList(context, state),
+                              child: _itemsList(
+                                context,
+                                state,
+                                onRemove: _removeItem,
+                              ),
                             ),
                             const SizedBox(width: 24),
                             Expanded(
@@ -116,7 +134,13 @@ class CartScreen extends StatelessWidget {
                         )
                       : Column(
                           children: [
-                            Expanded(child: _itemsList(context, state)),
+                            Expanded(
+                              child: _itemsList(
+                                context,
+                                state,
+                                onRemove: _removeItem,
+                              ),
+                            ),
                             Padding(
                               padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
                               child: _summary(state),
@@ -132,19 +156,101 @@ class CartScreen extends StatelessWidget {
     );
   }
 
-  Widget _itemsList(BuildContext context, CartState state, {Widget? footer}) =>
-      ListView.separated(
-        padding: EdgeInsets.all(
-          MediaQuery.sizeOf(context).width < 300 ? 4 : 16,
-        ),
-        itemCount: state.items.length + (footer == null ? 0 : 1),
-        separatorBuilder: (_, _) => const SizedBox(height: 10),
-        itemBuilder: (context, index) {
-          if (index == state.items.length) return footer!;
-          final item = state.items[index];
-          return _CartItemTile(item: item);
+  void _clearCart(BuildContext context) {
+    final cartCubit = context.read<CartCubit>();
+    final removedItems = cartCubit.clear();
+    if (removedItems.isEmpty) return;
+
+    _undoSnackGeneration++;
+    _undoExpiryTimer?.cancel();
+    _pendingRemovals.clear();
+    clearAppSnackBars(context);
+    showAppSnackBar(
+      context,
+      message: 'All items removed from your cart.',
+      duration: _undoDuration,
+      action: SnackBarAction(
+        label: 'Undo',
+        textColor: MenuPalette.gold,
+        onPressed: () => cartCubit.restoreAll(removedItems),
+      ),
+    );
+  }
+
+  void _removeItem(CartItem item) {
+    final cartCubit = context.read<CartCubit>();
+    final removal = cartCubit.remove(item.meal.id);
+    if (removal == null) return;
+
+    _pendingRemovals.add(removal);
+    _showUndoSnackBar();
+  }
+
+  void _showUndoSnackBar() {
+    if (_pendingRemovals.isEmpty) return;
+    final generation = ++_undoSnackGeneration;
+    _undoExpiryTimer?.cancel();
+    _undoExpiryTimer = Timer(_undoDuration, () {
+      if (!mounted || generation != _undoSnackGeneration) return;
+      _pendingRemovals.clear();
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    });
+    _undoRequested = false;
+    final latest = _pendingRemovals.last;
+    final count = _pendingRemovals.length;
+    final cartCubit = context.read<CartCubit>();
+    clearAppSnackBars(context);
+    final controller = showAppSnackBar(
+      context,
+      message: '${latest.item.meal.name} removed from your cart.',
+      duration: _undoDuration,
+      action: SnackBarAction(
+        label: count > 1 ? 'Undo ($count)' : 'Undo',
+        textColor: MenuPalette.gold,
+        onPressed: () {
+          if (_pendingRemovals.isEmpty) return;
+          _undoRequested = true;
+          _undoExpiryTimer?.cancel();
+          cartCubit.restoreRemoval(_pendingRemovals.removeLast());
         },
-      );
+      ),
+    );
+    controller.closed.then((reason) {
+      if (!mounted || generation != _undoSnackGeneration) return;
+      if (_undoRequested) {
+        if (_pendingRemovals.isNotEmpty) _showUndoSnackBar();
+      } else if (reason == SnackBarClosedReason.timeout ||
+          reason == SnackBarClosedReason.dismiss ||
+          reason == SnackBarClosedReason.swipe) {
+        _undoExpiryTimer?.cancel();
+        _pendingRemovals.clear();
+      }
+    });
+  }
+
+  Widget _itemsList(
+    BuildContext context,
+    CartState state, {
+    required ValueChanged<CartItem> onRemove,
+    Widget? footer,
+  }) => ListView.separated(
+    padding: EdgeInsets.all(MediaQuery.sizeOf(context).width < 300 ? 4 : 16),
+    itemCount: state.items.length + (footer == null ? 0 : 1),
+    separatorBuilder: (_, _) => const SizedBox(height: 10),
+    itemBuilder: (context, index) {
+      if (index == state.items.length) return footer!;
+      final item = state.items[index];
+      return _CartItemTile(item: item, onRemove: onRemove);
+    },
+  );
+
+  @override
+  void dispose() {
+    _undoSnackGeneration++;
+    _undoExpiryTimer?.cancel();
+    _pendingRemovals.clear();
+    super.dispose();
+  }
 
   Widget _summary(CartState state) => LayoutBuilder(
     builder: (context, constraints) {
@@ -165,6 +271,11 @@ class CartScreen extends StatelessWidget {
                 '${state.itemCount} ${state.itemCount == 1 ? 'item' : 'items'}',
                 style: const TextStyle(color: MenuPalette.muted),
               ),
+              if (state.unavailableItemCount > 0)
+                Text(
+                  '${state.unavailableItemCount} unavailable; excluded from total',
+                  style: TextStyle(color: MenuPalette.muted, fontSize: 12),
+                ),
               const SizedBox(height: 4),
               if (constraints.maxWidth < 120) ...[
                 const Text(
@@ -177,7 +288,7 @@ class CartScreen extends StatelessWidget {
                     fit: BoxFit.scaleDown,
                     child: Text(
                       total,
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: MenuPalette.gold,
                         fontSize: 20,
                         fontWeight: FontWeight.w600,
@@ -237,6 +348,14 @@ class CartScreen extends StatelessWidget {
                 '${state.itemCount} ${state.itemCount == 1 ? 'item' : 'items'}',
                 style: const TextStyle(color: MenuPalette.muted),
               ),
+              if (state.unavailableItemCount > 0)
+                Text(
+                  '${state.unavailableItemCount} unavailable; excluded from total',
+                  style: const TextStyle(
+                    color: MenuPalette.muted,
+                    fontSize: 12,
+                  ),
+                ),
               const SizedBox(height: 4),
               const Text(
                 'Total',
@@ -259,29 +378,14 @@ class CartScreen extends StatelessWidget {
 }
 
 class _CartItemTile extends StatelessWidget {
-  const _CartItemTile({required this.item});
+  const _CartItemTile({required this.item, required this.onRemove});
 
   final CartItem item;
-
-  void _removeFromCart(BuildContext context) {
-    final cartCubit = context.read<CartCubit>();
-    final removedItem = cartCubit.remove(item.meal.id);
-    if (removedItem == null) return;
-
-    showAppSnackBar(
-      context,
-      message: '${item.meal.name} removed from your cart.',
-      duration: const Duration(seconds: 5),
-      action: SnackBarAction(
-        label: 'Undo',
-        textColor: MenuPalette.gold,
-        onPressed: () => cartCubit.restore(removedItem),
-      ),
-    );
-  }
+  final ValueChanged<CartItem> onRemove;
 
   @override
   Widget build(BuildContext context) {
+    final available = item.meal.isAvailable;
     return Material(
       color: MenuPalette.surface,
       shape: RoundedRectangleBorder(
@@ -323,6 +427,14 @@ class _CartItemTile extends StatelessWidget {
                           fontWeight: FontWeight.w500,
                         ),
                       ),
+                      if (!available)
+                        const Text(
+                          'Unavailable',
+                          style: TextStyle(
+                            color: Colors.redAccent,
+                            fontSize: 12,
+                          ),
+                        ),
                       const SizedBox(height: 4),
                       Text(
                         '\$${item.meal.price.toStringAsFixed(2)} each',
@@ -334,9 +446,14 @@ class _CartItemTile extends StatelessWidget {
                       const SizedBox(height: 6),
                       Text(
                         '\$${item.total.toStringAsFixed(2)}',
-                        style: const TextStyle(
-                          color: MenuPalette.gold,
+                        style: TextStyle(
+                          color: available
+                              ? MenuPalette.gold
+                              : MenuPalette.muted,
                           fontWeight: FontWeight.w600,
+                          decoration: available
+                              ? TextDecoration.none
+                              : TextDecoration.lineThrough,
                         ),
                       ),
                     ],
@@ -349,7 +466,7 @@ class _CartItemTile extends StatelessWidget {
                     IconButton(
                       visualDensity: VisualDensity.compact,
                       tooltip: 'Remove ${item.meal.name}',
-                      onPressed: () => _removeFromCart(context),
+                      onPressed: () => onRemove(item),
                       icon: const Icon(
                         Icons.delete_outline,
                         color: MenuPalette.muted,
@@ -378,8 +495,11 @@ class _CartItemTile extends StatelessWidget {
                         _QuantityButton(
                           icon: Icons.add,
                           tooltip: 'Increase quantity',
-                          onPressed: () =>
-                              context.read<CartCubit>().increase(item.meal.id),
+                          onPressed: available
+                              ? () => context.read<CartCubit>().increase(
+                                  item.meal.id,
+                                )
+                              : null,
                           compact: compact,
                         ),
                       ],
@@ -408,7 +528,7 @@ class _CartItemTile extends StatelessWidget {
               constraints: const BoxConstraints.tightFor(width: 26, height: 26),
               padding: EdgeInsets.zero,
               tooltip: 'Remove ${item.meal.name}',
-              onPressed: () => _removeFromCart(context),
+              onPressed: () => onRemove(item),
               icon: const Icon(
                 Icons.delete_outline,
                 color: MenuPalette.muted,
@@ -436,6 +556,11 @@ class _CartItemTile extends StatelessWidget {
               fontWeight: FontWeight.w500,
             ),
           ),
+          if (!item.meal.isAvailable)
+            const Text(
+              'Unavailable',
+              style: TextStyle(color: Colors.redAccent, fontSize: 12),
+            ),
           const SizedBox(height: 4),
           Text(
             '\$${item.meal.price.toStringAsFixed(2)} each',
@@ -445,9 +570,14 @@ class _CartItemTile extends StatelessWidget {
           Text(
             '\$${item.total.toStringAsFixed(2)}',
             textAlign: TextAlign.center,
-            style: const TextStyle(
-              color: MenuPalette.gold,
+            style: TextStyle(
+              color: item.meal.isAvailable
+                  ? MenuPalette.gold
+                  : MenuPalette.muted,
               fontWeight: FontWeight.w600,
+              decoration: item.meal.isAvailable
+                  ? TextDecoration.none
+                  : TextDecoration.lineThrough,
             ),
           ),
           Row(
@@ -470,8 +600,9 @@ class _CartItemTile extends StatelessWidget {
               _QuantityButton(
                 icon: Icons.add,
                 tooltip: 'Increase quantity',
-                onPressed: () =>
-                    context.read<CartCubit>().increase(item.meal.id),
+                onPressed: item.meal.isAvailable
+                    ? () => context.read<CartCubit>().increase(item.meal.id)
+                    : null,
                 compact: true,
               ),
             ],
@@ -492,7 +623,7 @@ class _QuantityButton extends StatelessWidget {
 
   final IconData icon;
   final String tooltip;
-  final VoidCallback onPressed;
+  final VoidCallback? onPressed;
   final bool compact;
 
   @override
@@ -501,7 +632,7 @@ class _QuantityButton extends StatelessWidget {
       return Tooltip(
         message: tooltip,
         child: Semantics(
-          button: true,
+          button: onPressed != null,
           label: tooltip,
           child: InkWell(
             onTap: onPressed,
@@ -509,7 +640,11 @@ class _QuantityButton extends StatelessWidget {
             child: SizedBox(
               width: 20,
               height: 26,
-              child: Icon(icon, color: MenuPalette.gold, size: 16),
+              child: Icon(
+                icon,
+                color: onPressed == null ? MenuPalette.muted : MenuPalette.gold,
+                size: 16,
+              ),
             ),
           ),
         ),

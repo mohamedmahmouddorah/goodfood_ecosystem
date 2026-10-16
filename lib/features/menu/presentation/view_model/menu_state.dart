@@ -11,8 +11,7 @@ class MenuState {
     this.meals = const [],
     this.category, // null = All
     this.query = '',
-    this.hasMore = false,
-    this.loadingMore = false,
+    this.isFromCache = false,
     this.error,
   });
 
@@ -20,8 +19,7 @@ class MenuState {
   final List<MealModel> meals;
   final MealCategory? category;
   final String query;
-  final bool hasMore;
-  final bool loadingMore;
+  final bool isFromCache;
   final String? error;
 
   /// `category` takes a getter so that `() => null` can mean "All".
@@ -31,17 +29,14 @@ class MenuState {
     List<MealModel>? meals,
     ValueGetter<MealCategory?>? category,
     String? query,
-    bool? hasMore,
-    bool? loadingMore,
+    bool? isFromCache,
     String? error,
-  }) =>
-      MenuState(
-        status: status ?? this.status,
-        meals: meals ?? this.meals,
-        category: category != null ? category() : this.category,
-        query: query ?? this.query,
-        hasMore: hasMore ?? this.hasMore,
-        loadingMore: loadingMore ?? this.loadingMore,
-        error: error,
-      );
+  }) => MenuState(
+    status: status ?? this.status,
+    meals: meals ?? this.meals,
+    category: category != null ? category() : this.category,
+    query: query ?? this.query,
+    isFromCache: isFromCache ?? this.isFromCache,
+    error: error,
+  );
 }

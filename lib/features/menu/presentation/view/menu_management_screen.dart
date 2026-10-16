@@ -12,12 +12,24 @@ import '../widgets/menu_palette.dart';
 import 'add_edit_meal_screen.dart';
 
 class MenuManagementScreen extends StatelessWidget {
-  const MenuManagementScreen({super.key, required this.repository});
+  const MenuManagementScreen({
+    super.key,
+    required this.repository,
+    this.existingCubit,
+  });
 
   final MenuRepository repository;
+  final MenuManagementCubit? existingCubit;
 
   @override
   Widget build(BuildContext context) {
+    final cubit = existingCubit;
+    if (cubit != null) {
+      return BlocProvider.value(
+        value: cubit,
+        child: const _MenuManagementView(),
+      );
+    }
     return BlocProvider(
       create: (_) => MenuManagementCubit(repository)..watch(),
       child: const _MenuManagementView(),
@@ -41,7 +53,7 @@ class _MenuManagementView extends StatelessWidget {
           backgroundColor: MenuPalette.bg,
           foregroundColor: Colors.white,
           title: const Text(
-            'Menu Management',
+            'Customer Menu Products',
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
@@ -61,99 +73,121 @@ class _MenuManagementView extends StatelessWidget {
                 onAction: context.read<MenuManagementCubit>().watch,
               );
             }
-            if (state.visible.isEmpty) {
-              return Column(
-                children: [
-                  const SizedBox(height: 12),
-                  CategoryChips(
-                    selected: state.category,
-                    onSelected: context
-                        .read<MenuManagementCubit>()
-                        .selectCategory,
-                  ),
-                  const Expanded(
-                    child: _ManagementMessage(
-                      icon: Icons.restaurant_menu,
-                      message: 'No meals in this category yet.',
-                    ),
-                  ),
-                ],
-              );
-            }
             return Column(
               children: [
-                const SizedBox(height: 12),
+                const SizedBox(height: 8),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 728),
+                    child: TextField(
+                      key: const ValueKey('admin-product-search'),
+                      onChanged: context.read<MenuManagementCubit>().search,
+                      style: const TextStyle(color: Colors.white),
+                      decoration: InputDecoration(
+                        hintText: 'Search products...',
+                        hintStyle: const TextStyle(color: MenuPalette.muted),
+                        prefixIcon: const Icon(
+                          Icons.search,
+                          color: MenuPalette.muted,
+                        ),
+                        filled: true,
+                        fillColor: MenuPalette.surface,
+                        contentPadding: const EdgeInsets.symmetric(
+                          vertical: 12,
+                        ),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(14),
+                          borderSide: const BorderSide(
+                            color: MenuPalette.border,
+                          ),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(14),
+                          borderSide: const BorderSide(
+                            color: MenuPalette.border,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 728),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: _VisibilityFilters(
+                        selected: state.visibilityFilter,
+                        onSelected: context
+                            .read<MenuManagementCubit>()
+                            .selectVisibilityFilter,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 10),
                 CategoryChips(
                   selected: state.category,
                   onSelected: context
                       .read<MenuManagementCubit>()
                       .selectCategory,
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 8),
                 Expanded(
-                  child: Center(
-                    child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 760),
-                      child: ListView.separated(
-                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-                        itemCount: state.visible.length,
-                        separatorBuilder: (_, _) => const SizedBox(height: 8),
-                        itemBuilder: (context, index) =>
-                            _mealTile(context, state.visible[index]),
-                      ),
-                    ),
-                  ),
+                  child: state.visible.isEmpty
+                      ? _ManagementMessage(
+                          icon: Icons.restaurant_menu,
+                          message:
+                              state.searchQuery.trim().isNotEmpty ||
+                                  state.visibilityFilter !=
+                                      MealVisibilityFilter.all ||
+                                  state.category != null
+                              ? 'No products match these filters.'
+                              : 'No products yet. Connect to Firebase to refresh, or add a product below.',
+                          actionLabel: state.meals.isEmpty ? 'Refresh' : null,
+                          onAction: state.meals.isEmpty
+                              ? context.read<MenuManagementCubit>().watch
+                              : null,
+                        )
+                      : Center(
+                          child: ConstrainedBox(
+                            constraints: const BoxConstraints(maxWidth: 760),
+                            child: ListView.separated(
+                              padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                              itemCount: state.visible.length,
+                              separatorBuilder: (_, _) =>
+                                  const SizedBox(height: 8),
+                              itemBuilder: (context, index) =>
+                                  _mealTile(context, state.visible[index]),
+                            ),
+                          ),
+                        ),
                 ),
               ],
             );
           },
         ),
-        bottomNavigationBar: SafeArea(
-          child: Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 760),
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-                child: SizedBox(
-                  height: 52,
-                  width: double.infinity,
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      gradient: MenuPalette.goldGradient,
-                      borderRadius: BorderRadius.circular(18),
-                    ),
-                    child: TextButton.icon(
-                      onPressed: () => _openEditor(context),
-                      icon: const Icon(Icons.add, color: Colors.black),
-                      label: const Text(
-                        'Add Meal',
-                        style: TextStyle(color: Colors.black, fontSize: 16),
-                      ),
-                      style: TextButton.styleFrom(
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(18),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
+        floatingActionButton: FloatingActionButton.extended(
+          onPressed: () => _openEditor(context),
+          backgroundColor: MenuPalette.gold,
+          foregroundColor: Colors.black,
+          icon: const Icon(Icons.add),
+          label: const Text('Add product'),
         ),
+        floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       ),
     );
   }
 
   Widget _mealTile(BuildContext context, MealModel meal) {
-    return GestureDetector(
-      onLongPress: () => _confirmDelete(context, meal),
-      child: AdminMealTile(
-        meal: meal,
-        onTap: () => _openEditor(context, meal),
-        onToggle: (value) =>
-            context.read<MenuManagementCubit>().toggle(meal.id, value),
-      ),
+    return AdminMealTile(
+      meal: meal,
+      onTap: () => _openEditor(context, meal),
+      onToggle: (value) =>
+          context.read<MenuManagementCubit>().toggle(meal.id, value),
+      onDelete: () => _confirmDelete(context, meal),
     );
   }
 
@@ -200,6 +234,45 @@ class _MenuManagementView extends StatelessWidget {
     if (shouldDelete == true && context.mounted) {
       await context.read<MenuManagementCubit>().delete(meal.id);
     }
+  }
+}
+
+class _VisibilityFilters extends StatelessWidget {
+  const _VisibilityFilters({required this.selected, required this.onSelected});
+
+  final MealVisibilityFilter selected;
+  final ValueChanged<MealVisibilityFilter> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    const filters = [
+      (MealVisibilityFilter.all, 'All products'),
+      (MealVisibilityFilter.visible, 'Visible'),
+      (MealVisibilityFilter.hidden, 'Hidden'),
+    ];
+    return Wrap(
+      alignment: WrapAlignment.center,
+      spacing: 8,
+      runSpacing: 4,
+      children: [
+        for (final (filter, label) in filters)
+          ChoiceChip(
+            key: ValueKey('visibility-filter-${filter.name}'),
+            label: Text(label),
+            selected: selected == filter,
+            onSelected: (_) => onSelected(filter),
+            showCheckmark: false,
+            labelStyle: TextStyle(
+              color: selected == filter ? Colors.black : MenuPalette.muted,
+            ),
+            selectedColor: MenuPalette.gold,
+            backgroundColor: MenuPalette.surface,
+            side: BorderSide(
+              color: selected == filter ? MenuPalette.gold : MenuPalette.border,
+            ),
+          ),
+      ],
+    );
   }
 }
 

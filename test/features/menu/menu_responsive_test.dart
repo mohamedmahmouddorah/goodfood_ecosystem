@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:goodfood_ecosystem/features/menu/data/models/meal_model.dart';
 import 'package:goodfood_ecosystem/features/menu/presentation/view/add_edit_meal_screen.dart';
+import 'package:goodfood_ecosystem/features/menu/presentation/widgets/admin_meal_tile.dart';
 import 'package:goodfood_ecosystem/features/menu/presentation/widgets/category_chips.dart';
 import 'package:goodfood_ecosystem/features/menu/presentation/widgets/meal_card.dart';
 
@@ -52,6 +53,39 @@ void main() {
 
     expect(find.text('Grilled Chicken'), findsOneWidget);
     expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('admin product tile adapts to narrow widths', (tester) async {
+    final meal = const MealModel(
+      id: 'admin-meal',
+      name: 'Grilled Chicken',
+      category: MealCategory.mainCourse,
+      price: 12.99,
+      imageUrl: '',
+    );
+
+    for (final width in [100.0, 180.0, 320.0, 760.0]) {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: Center(
+              child: SizedBox(
+                width: width,
+                child: AdminMealTile(
+                  meal: meal,
+                  onTap: () {},
+                  onToggle: (_) {},
+                  onDelete: () {},
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('Grilled Chicken'), findsOneWidget);
+      expect(tester.takeException(), isNull, reason: 'width: $width');
+    }
   });
 
   testWidgets('category filters are centered on wide screens', (tester) async {

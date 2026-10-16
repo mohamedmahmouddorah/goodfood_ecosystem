@@ -4,23 +4,49 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../data/models/meal_model.dart';
 import '../../data/repositories/menu_repository.dart';
-import '../../data/services/menu_remote_service.dart' show MealDoc;
+import '../../data/services/menu_remote_service.dart' show RemoteMealsSnapshot;
 import 'menu_state.dart';
 
 class MenuCubit extends Cubit<MenuState> {
   MenuCubit(this._repo) : super(const MenuState());
 
   final MenuRepository _repo;
+  List<MealModel> get availableMeals => _allMeals;
   Timer? _debounce;
-  MealDoc? _cursor; // Firestore page cursor: kept here, not in the state
-  int _requestId = 0; // lets us ignore responses that arrive late
+  StreamSubscription<RemoteMealsSnapshot>? _subscription;
+  List<MealModel> _allMeals = const [];
+  bool _hasSnapshot = false;
 
-  Future<void> load() => _fetch(reset: true);
+  Future<void> load() async {
+    await _subscription?.cancel();
+    _hasSnapshot = false;
+    emit(
+      state.copyWith(
+        status: MenuStatus.loading,
+        meals: const [],
+        isFromCache: false,
+      ),
+    );
+    _subscription = _repo.watchAvailableMeals().listen(
+      (snapshot) {
+        _hasSnapshot = true;
+        _allMeals = snapshot.meals;
+        _emitVisible(snapshot.isFromCache);
+      },
+      onError: (Object error, StackTrace _) {
+        if (_hasSnapshot) return;
+        final message = error is MenuFailure
+            ? error.message
+            : 'Could not load meals from Firebase.';
+        emit(state.copyWith(status: MenuStatus.failure, error: message));
+      },
+    );
+  }
 
   void selectCategory(MealCategory? category) {
     if (category == state.category) return;
     emit(state.copyWith(category: () => category));
-    _fetch(reset: true);
+    _emitVisible(state.isFromCache);
   }
 
   /// Debounced: one Firestore query after the user stops typing.
@@ -28,54 +54,41 @@ class MenuCubit extends Cubit<MenuState> {
     _debounce?.cancel();
     _debounce = Timer(const Duration(milliseconds: 400), () {
       final q = text.trim();
-      if (q == state.query) return;
+      if (q == state.query) {
+        return;
+      }
       emit(state.copyWith(query: q));
-      _fetch(reset: true);
+      _emitVisible(state.isFromCache);
     });
   }
 
-  Future<void> loadMore() async {
-    if (!state.hasMore || state.loadingMore || state.status != MenuStatus.success) return;
-    await _fetch(reset: false);
-  }
-
-  Future<void> _fetch({required bool reset}) async {
-    final id = ++_requestId;
-    if (reset) {
-      _cursor = null;
-      emit(state.copyWith(
-        status: MenuStatus.loading,
-        meals: const [],
-        hasMore: false,
-        loadingMore: false,
-      ));
-    } else {
-      emit(state.copyWith(loadingMore: true));
-    }
-
-    try {
-      final page = await _repo.getMeals(
-        category: state.category,
-        query: state.query,
-        after: _cursor,
-      );
-      if (id != _requestId || isClosed) return;
-      _cursor = page.cursor;
-      emit(state.copyWith(
+  void _emitVisible(bool isFromCache) {
+    if (isClosed) return;
+    final query = state.query.toLowerCase();
+    final meals =
+        _allMeals
+            .where(
+              (meal) =>
+                  (state.category == null || meal.category == state.category) &&
+                  meal.name.toLowerCase().startsWith(query),
+            )
+            .toList()
+          ..sort(
+            (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
+          );
+    emit(
+      state.copyWith(
         status: MenuStatus.success,
-        meals: reset ? page.meals : [...state.meals, ...page.meals],
-        hasMore: page.hasMore,
-        loadingMore: false,
-      ));
-    } on MenuFailure catch (e) {
-      if (id != _requestId || isClosed) return;
-      emit(state.copyWith(status: MenuStatus.failure, loadingMore: false, error: e.message));
-    }
+        meals: meals,
+        isFromCache: isFromCache,
+      ),
+    );
   }
 
   @override
   Future<void> close() {
     _debounce?.cancel();
+    _subscription?.cancel();
     return super.close();
   }
 }

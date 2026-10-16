@@ -10,11 +10,13 @@ class AdminMealTile extends StatelessWidget {
     required this.meal,
     required this.onTap,
     required this.onToggle,
+    required this.onDelete,
   });
 
   final MealModel meal;
   final VoidCallback onTap;
   final ValueChanged<bool> onToggle;
+  final VoidCallback onDelete;
 
   @override
   Widget build(BuildContext context) {
@@ -29,9 +31,10 @@ class AdminMealTile extends StatelessWidget {
         onTap: onTap,
         child: LayoutBuilder(
           builder: (context, constraints) {
-            final compact = constraints.maxWidth < 300;
+            final narrow = constraints.maxWidth < 220;
+            final compact = constraints.maxWidth < 340;
             return Padding(
-              padding: const EdgeInsets.all(10),
+              padding: EdgeInsets.all(narrow ? 6 : 10),
               child: compact
                   ? Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -41,31 +44,83 @@ class AdminMealTile extends StatelessWidget {
                           child: MealImage(
                             url: meal.imageUrl,
                             width: double.infinity,
-                            height: 100,
+                            height: narrow ? 72 : 100,
                             cacheWidth: 400,
                           ),
                         ),
-                        const SizedBox(height: 8),
-                        Text(
-                          meal.name,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 15,
+                        SizedBox(height: narrow ? 4 : 8),
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    meal.name,
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 15,
+                                    ),
+                                  ),
+                                  Text(
+                                    '\$${meal.price.toStringAsFixed(2)}',
+                                    style: const TextStyle(
+                                      color: MenuPalette.muted,
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            if (narrow)
+                              Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Transform.scale(
+                                    scale: 0.7,
+                                    child: _availabilitySwitch(),
+                                  ),
+                                  SizedBox(
+                                    width: 32,
+                                    height: 32,
+                                    child: IconButton(
+                                      onPressed: onDelete,
+                                      tooltip: 'Delete meal',
+                                      padding: EdgeInsets.zero,
+                                      visualDensity: VisualDensity.compact,
+                                      icon: const Icon(
+                                        Icons.delete_outline,
+                                        color: Colors.redAccent,
+                                        size: 20,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              )
+                            else ...[
+                              _availabilitySwitch(),
+                              _deleteButton(),
+                            ],
+                          ],
+                        ),
+                        if (!narrow) ...[
+                          const SizedBox(height: 4),
+                          Align(
+                            alignment: Alignment.centerRight,
+                            child: Text(
+                              meal.isAvailable
+                                  ? 'Visible to customers'
+                                  : 'Hidden from customers',
+                              style: const TextStyle(
+                                color: MenuPalette.muted,
+                                fontSize: 12,
+                              ),
+                            ),
                           ),
-                        ),
-                        Text(
-                          '\$${meal.price.toStringAsFixed(2)}',
-                          style: const TextStyle(
-                            color: MenuPalette.muted,
-                            fontSize: 14,
-                          ),
-                        ),
-                        Align(
-                          alignment: Alignment.centerRight,
-                          child: _availabilitySwitch(),
-                        ),
+                        ],
                       ],
                     )
                   : Row(
@@ -105,7 +160,20 @@ class AdminMealTile extends StatelessWidget {
                             ],
                           ),
                         ),
-                        _availabilitySwitch(),
+                        Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            _availabilitySwitch(),
+                            Text(
+                              meal.isAvailable ? 'Visible' : 'Hidden',
+                              style: const TextStyle(
+                                color: MenuPalette.muted,
+                                fontSize: 11,
+                              ),
+                            ),
+                          ],
+                        ),
+                        _deleteButton(),
                       ],
                     ),
             );
@@ -116,14 +184,21 @@ class AdminMealTile extends StatelessWidget {
   }
 
   Widget _availabilitySwitch() => Switch(
-        value: meal.isAvailable,
-        onChanged: onToggle,
-        thumbColor: const WidgetStatePropertyAll(Colors.white),
-        trackOutlineColor: const WidgetStatePropertyAll(Colors.transparent),
-        trackColor: WidgetStateProperty.resolveWith(
-          (states) => states.contains(WidgetState.selected)
-              ? MenuPalette.success
-              : const Color(0xFF3A4A52),
-        ),
-      );
+    value: meal.isAvailable,
+    onChanged: onToggle,
+    thumbColor: const WidgetStatePropertyAll(Colors.white),
+    trackOutlineColor: const WidgetStatePropertyAll(Colors.transparent),
+    trackColor: WidgetStateProperty.resolveWith(
+      (states) => states.contains(WidgetState.selected)
+          ? MenuPalette.success
+          : const Color(0xFF3A4A52),
+    ),
+  );
+
+  Widget _deleteButton() => IconButton(
+    onPressed: onDelete,
+    tooltip: 'Delete meal',
+    visualDensity: VisualDensity.compact,
+    icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
+  );
 }

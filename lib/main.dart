@@ -3,16 +3,17 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import 'features/menu/data/repositories/menu_repository.dart';
+import 'features/menu/data/services/meal_local_cache.dart';
 import 'features/menu/data/services/menu_remote_service.dart';
-import 'features/menu/data/services/menu_api_service.dart';
 import 'features/menu/presentation/view/menu_screen.dart';
 
 import 'firebase_options.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  FirebaseFirestore.instance.settings = const Settings(
+    persistenceEnabled: true,
   );
   runApp(const MyApp());
 }
@@ -35,7 +36,7 @@ class MyApp extends StatelessWidget {
       home: MenuScreen(
         repository: MenuRepository(
           MenuRemoteService(FirebaseFirestore.instance),
-          menuApiService: MenuApiService(),
+          mealLocalCache: SqliteMealLocalCache(),
         ),
       ),
     );
@@ -104,7 +105,9 @@ class _TestFirebaseScreenState extends State<TestFirebaseScreen> {
       }
       await batch.commit();
 
-      if (mounted) _showSnackBar('All meals deleted successfully!', Colors.orange);
+      if (mounted) {
+        _showSnackBar('All meals deleted successfully!', Colors.orange);
+      }
     } catch (e) {
       if (mounted) _showSnackBar('Error deleting all meals: $e', Colors.red);
     } finally {
@@ -184,7 +187,9 @@ class _TestFirebaseScreenState extends State<TestFirebaseScreen> {
                                 icon: const Icon(Icons.add),
                                 label: const Text('Add Meal'),
                                 style: FilledButton.styleFrom(
-                                  padding: const EdgeInsets.symmetric(vertical: 14),
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 14,
+                                  ),
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(10),
                                   ),
@@ -199,8 +204,12 @@ class _TestFirebaseScreenState extends State<TestFirebaseScreen> {
                                 label: const Text('Delete All'),
                                 style: OutlinedButton.styleFrom(
                                   foregroundColor: theme.colorScheme.error,
-                                  side: BorderSide(color: theme.colorScheme.error),
-                                  padding: const EdgeInsets.symmetric(vertical: 14),
+                                  side: BorderSide(
+                                    color: theme.colorScheme.error,
+                                  ),
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 14,
+                                  ),
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(10),
                                   ),
@@ -242,7 +251,9 @@ class _TestFirebaseScreenState extends State<TestFirebaseScreen> {
                       return Center(
                         child: Text(
                           'No meals recorded yet',
-                          style: theme.textTheme.bodyMedium?.copyWith(color: Colors.grey),
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: Colors.grey,
+                          ),
                         ),
                       );
                     }
@@ -250,7 +261,8 @@ class _TestFirebaseScreenState extends State<TestFirebaseScreen> {
                     final docs = snapshot.data!.docs;
                     return ListView.separated(
                       itemCount: docs.length,
-                      separatorBuilder: (context, index) => const SizedBox(height: 8),
+                      separatorBuilder: (context, index) =>
+                          const SizedBox(height: 8),
                       itemBuilder: (context, index) {
                         final doc = docs[index];
                         final data = doc.data() as Map<String, dynamic>;
@@ -263,7 +275,8 @@ class _TestFirebaseScreenState extends State<TestFirebaseScreen> {
                           ),
                           child: ListTile(
                             leading: CircleAvatar(
-                              backgroundColor: theme.colorScheme.primaryContainer,
+                              backgroundColor:
+                                  theme.colorScheme.primaryContainer,
                               child: Icon(
                                 Icons.restaurant,
                                 color: theme.colorScheme.primary,
@@ -271,7 +284,9 @@ class _TestFirebaseScreenState extends State<TestFirebaseScreen> {
                             ),
                             title: Text(
                               data['name'] ?? '',
-                              style: const TextStyle(fontWeight: FontWeight.w600),
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
                             subtitle: Text('Price: \$${data['price']}'),
                             trailing: IconButton(

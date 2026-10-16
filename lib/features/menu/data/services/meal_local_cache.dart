@@ -17,6 +17,12 @@ abstract interface class MealLocalCache {
   Future<CachedMeals?> readMeals();
 
   Future<void> replaceMeals(List<MealModel> meals);
+
+  Future<void> replaceAvailableMeals(List<MealModel> meals);
+
+  Future<void> upsertMeal(MealModel meal);
+
+  Future<void> removeMeal(String id);
 }
 
 class SqliteMealLocalCache implements MealLocalCache {
@@ -60,6 +66,63 @@ class SqliteMealLocalCache implements MealLocalCache {
         'value': 'true',
       }, conflictAlgorithm: ConflictAlgorithm.replace);
     });
+  }
+
+  @override
+  Future<void> replaceAvailableMeals(List<MealModel> meals) async {
+    final database = await _openDatabase();
+    final availableIds = meals.map((meal) => meal.id).toSet();
+    await database.transaction((transaction) async {
+      final cachedRows = await transaction.query(
+        'meals',
+        columns: ['id', 'isAvailable'],
+      );
+      for (final row in cachedRows) {
+        final id = row['id']! as String;
+        final wasAvailable = row['isAvailable']! as int == 1;
+        if (wasAvailable && !availableIds.contains(id)) {
+          await transaction.update(
+            'meals',
+            {'isAvailable': 0},
+            where: 'id = ?',
+            whereArgs: [id],
+          );
+        }
+      }
+      for (final meal in meals) {
+        await transaction.insert(
+          'meals',
+          _mealToRow(meal),
+          conflictAlgorithm: ConflictAlgorithm.replace,
+        );
+      }
+      await transaction.insert('cache_metadata', {
+        'key': 'meals_initialized',
+        'value': 'true',
+      }, conflictAlgorithm: ConflictAlgorithm.replace);
+    });
+  }
+
+  @override
+  Future<void> upsertMeal(MealModel meal) async {
+    final database = await _openDatabase();
+    await database.transaction((transaction) async {
+      await transaction.insert(
+        'meals',
+        _mealToRow(meal),
+        conflictAlgorithm: ConflictAlgorithm.replace,
+      );
+      await transaction.insert('cache_metadata', {
+        'key': 'meals_initialized',
+        'value': 'true',
+      }, conflictAlgorithm: ConflictAlgorithm.replace);
+    });
+  }
+
+  @override
+  Future<void> removeMeal(String id) async {
+    final database = await _openDatabase();
+    await database.delete('meals', where: 'id = ?', whereArgs: [id]);
   }
 
   Future<Database> _openDatabase() => _database ??= _createDatabase();

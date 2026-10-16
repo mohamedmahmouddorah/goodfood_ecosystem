@@ -12,9 +12,9 @@ enum MealCategory {
   final String label;
 
   static MealCategory fromKey(String? key) => values.firstWhere(
-        (c) => c.key == key,
-        orElse: () => MealCategory.mainCourse,
-      );
+    (c) => c.key == key,
+    orElse: () => MealCategory.mainCourse,
+  );
 }
 
 class MealModel {
@@ -52,30 +52,30 @@ class MealModel {
   /// `nameLower` is the field used for prefix search (Firestore has no
   /// case-insensitive or full-text search).
   Map<String, dynamic> toMap() => {
-        'name': name,
-        'nameLower': name.trim().toLowerCase(),
-        'category': category.key,
-        'price': price,
-        'imageUrl': imageUrl,
-        'description': description,
-        'isAvailable': isAvailable,
-      };
+    'name': name,
+    'nameLower': name.trim().toLowerCase(),
+    'category': category.key,
+    'price': price,
+    'imageUrl': imageUrl,
+    'description': description,
+    'isAvailable': isAvailable,
+  };
 
   MealModel copyWith({
+    String? id,
     String? name,
     MealCategory? category,
     double? price,
     String? imageUrl,
     String? description,
     bool? isAvailable,
-  }) =>
-      MealModel(
-        id: id,
-        name: name ?? this.name,
-        category: category ?? this.category,
-        price: price ?? this.price,
-        imageUrl: imageUrl ?? this.imageUrl,
-        description: description ?? this.description,
-        isAvailable: isAvailable ?? this.isAvailable,
-      );
+  }) => MealModel(
+    id: id ?? this.id,
+    name: name ?? this.name,
+    category: category ?? this.category,
+    price: price ?? this.price,
+    imageUrl: imageUrl ?? this.imageUrl,
+    description: description ?? this.description,
+    isAvailable: isAvailable ?? this.isAvailable,
+  );
 }
