@@ -12,6 +12,7 @@ class MenuState {
     this.category, // null = All
     this.query = '',
     this.isFromCache = false,
+    this.revision = 0,
     this.error,
   });
 
@@ -20,9 +21,11 @@ class MenuState {
   final MealCategory? category;
   final String query;
   final bool isFromCache;
+
+  /// Increases only when a new snapshot arrives (not on search/category).
+  final int revision;
   final String? error;
 
-  /// `category` takes a getter so that `() => null` can mean "All".
   /// `error` is intentionally NOT carried over: it only lives in a failure state.
   MenuState copyWith({
     MenuStatus? status,
@@ -30,6 +33,7 @@ class MenuState {
     ValueGetter<MealCategory?>? category,
     String? query,
     bool? isFromCache,
+    int? revision,
     String? error,
   }) => MenuState(
     status: status ?? this.status,
@@ -37,6 +41,7 @@ class MenuState {
     category: category != null ? category() : this.category,
     query: query ?? this.query,
     isFromCache: isFromCache ?? this.isFromCache,
+    revision: revision ?? this.revision,
     error: error,
   );
 }

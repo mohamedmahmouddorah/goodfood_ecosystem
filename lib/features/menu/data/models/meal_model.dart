@@ -36,6 +36,31 @@ class MealModel {
   final String description;
   final bool isAvailable;
 
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        other is MealModel &&
+            runtimeType == other.runtimeType &&
+            id == other.id &&
+            name == other.name &&
+            category == other.category &&
+            price == other.price &&
+            imageUrl == other.imageUrl &&
+            description == other.description &&
+            isAvailable == other.isAvailable;
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    name,
+    category,
+    price,
+    imageUrl,
+    description,
+    isAvailable,
+  );
+
   factory MealModel.fromDoc(DocumentSnapshot<Map<String, dynamic>> doc) {
     final d = doc.data() ?? const <String, dynamic>{};
     return MealModel(

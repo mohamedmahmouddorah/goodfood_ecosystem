@@ -20,44 +20,36 @@ class MenuRemoteService {
 
   final CollectionReference<Map<String, dynamic>> _meals;
 
-  // ───────────── Customer ─────────────
-  Future<MealModel?> fetchMeal(String id) async {
-    final doc = await _meals.doc(id).get();
-    return doc.exists ? MealModel.fromDoc(doc) : null;
-  }
-
-  // ───────────── Admin ─────────────
-
   /// Live customer list. Only available products are returned.
   Stream<RemoteMealsSnapshot> watchAvailable() =>
       _watch(_meals.where('isAvailable', isEqualTo: true));
 
-  /// Requests all meals for the management screen. Firestore rules remain the
-  /// authority on whether this client can read hidden products.
+  /// All meals (including hidden) for the management screen. Firestore rules
+  /// remain the authority on whether this client can read hidden products.
   Stream<RemoteMealsSnapshot> watchAll({
     MealCategory? category,
     bool includeHidden = false,
   }) {
     Query<Map<String, dynamic>> query = _meals;
-    if (!includeHidden) {
-      query = query.where('isAvailable', isEqualTo: true);
-    }
     if (category != null) {
       query = query.where('category', isEqualTo: category.key);
+    }
+    if (!includeHidden) {
+      query = query.where('isAvailable', isEqualTo: true);
     }
     return _watch(query);
   }
 
   Stream<RemoteMealsSnapshot> _watch(Query<Map<String, dynamic>> query) {
-    return query.snapshots(includeMetadataChanges: true).map((snapshot) {
-      final meals = snapshot.docs.map(MealModel.fromDoc).toList()
-        ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
-      return RemoteMealsSnapshot(
-        meals: meals,
-        isFromCache: snapshot.metadata.isFromCache,
-        hasPendingWrites: snapshot.metadata.hasPendingWrites,
-      );
-    });
+    return query
+        .snapshots(includeMetadataChanges: true)
+        .map(
+          (snapshot) => RemoteMealsSnapshot(
+            meals: snapshot.docs.map(MealModel.fromDoc).toList(growable: false),
+            isFromCache: snapshot.metadata.isFromCache,
+            hasPendingWrites: snapshot.metadata.hasPendingWrites,
+          ),
+        );
   }
 
   String newMealId() => _meals.doc().id;

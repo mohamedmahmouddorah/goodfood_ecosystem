@@ -8,6 +8,7 @@ import '../view_model/menu_management_cubit.dart';
 import '../view_model/menu_management_state.dart';
 import '../widgets/admin_meal_tile.dart';
 import '../widgets/category_chips.dart';
+import '../widgets/menu_message.dart';
 import '../widgets/menu_palette.dart';
 import 'add_edit_meal_screen.dart';
 
@@ -57,6 +58,33 @@ class _MenuManagementView extends StatelessWidget {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
+          actions: [
+            Padding(
+              padding: const EdgeInsets.only(right: 12),
+              child: TextButton.icon(
+                onPressed: () => _openEditor(context),
+                style: TextButton.styleFrom(
+                  foregroundColor: Colors.black,
+                  backgroundColor: MenuPalette.gold,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 10,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                icon: const Icon(Icons.add, size: 18),
+                label: const Text(
+                  'Add product',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 14,
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
         body: BlocBuilder<MenuManagementCubit, MenuManagementState>(
           builder: (context, state) {
@@ -66,7 +94,7 @@ class _MenuManagementView extends StatelessWidget {
               );
             }
             if (state.status == ManagementStatus.failure) {
-              return _ManagementMessage(
+              return MenuMessage(
                 icon: Icons.wifi_off_outlined,
                 message: state.loadError ?? 'Could not load meals.',
                 actionLabel: 'Try again',
@@ -137,7 +165,7 @@ class _MenuManagementView extends StatelessWidget {
                 const SizedBox(height: 8),
                 Expanded(
                   child: state.visible.isEmpty
-                      ? _ManagementMessage(
+                      ? MenuMessage(
                           icon: Icons.restaurant_menu,
                           message:
                               state.searchQuery.trim().isNotEmpty ||
@@ -169,14 +197,6 @@ class _MenuManagementView extends StatelessWidget {
             );
           },
         ),
-        floatingActionButton: FloatingActionButton.extended(
-          onPressed: () => _openEditor(context),
-          backgroundColor: MenuPalette.gold,
-          foregroundColor: Colors.black,
-          icon: const Icon(Icons.add),
-          label: const Text('Add product'),
-        ),
-        floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       ),
     );
   }
@@ -276,47 +296,3 @@ class _VisibilityFilters extends StatelessWidget {
   }
 }
 
-class _ManagementMessage extends StatelessWidget {
-  const _ManagementMessage({
-    required this.icon,
-    required this.message,
-    this.actionLabel,
-    this.onAction,
-  });
-
-  final IconData icon;
-  final String message;
-  final String? actionLabel;
-  final VoidCallback? onAction;
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, color: MenuPalette.muted, size: 42),
-            const SizedBox(height: 12),
-            Text(
-              message,
-              textAlign: TextAlign.center,
-              style: const TextStyle(color: MenuPalette.muted),
-            ),
-            if (actionLabel != null) ...[
-              const SizedBox(height: 12),
-              TextButton(
-                onPressed: onAction,
-                child: Text(
-                  actionLabel!,
-                  style: const TextStyle(color: MenuPalette.gold),
-                ),
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-}

@@ -14,6 +14,7 @@ import '../view_model/menu_cubit.dart';
 import '../view_model/menu_state.dart';
 import '../widgets/category_chips.dart';
 import '../widgets/meal_card.dart';
+import '../widgets/menu_message.dart';
 import '../widgets/menu_palette.dart';
 import 'meal_details_screen.dart';
 import 'menu_management_screen.dart';
@@ -199,7 +200,7 @@ class _MenuViewState extends State<_MenuView> {
                   else if (state.status == MenuStatus.failure)
                     SliverFillRemaining(
                       hasScrollBody: false,
-                      child: _MenuMessage(
+                      child: MenuMessage(
                         icon: Icons.wifi_off_outlined,
                         message: state.error ?? 'Could not load meals.',
                         actionLabel: 'Try again',
@@ -209,7 +210,7 @@ class _MenuViewState extends State<_MenuView> {
                   else if (state.meals.isEmpty)
                     SliverFillRemaining(
                       hasScrollBody: false,
-                      child: _MenuMessage(
+                      child: MenuMessage(
                         icon: Icons.restaurant_menu,
                         message: state.isFromCache
                             ? 'No saved products. Connect to the internet to download the menu.'
@@ -539,51 +540,6 @@ class _MenuBottomNavigation extends StatelessWidget {
               ),
             );
           },
-        ),
-      ),
-    );
-  }
-}
-
-class _MenuMessage extends StatelessWidget {
-  const _MenuMessage({
-    required this.icon,
-    required this.message,
-    this.actionLabel,
-    this.onAction,
-  });
-
-  final IconData icon;
-  final String message;
-  final String? actionLabel;
-  final VoidCallback? onAction;
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, color: MenuPalette.muted, size: 42),
-            const SizedBox(height: 12),
-            Text(
-              message,
-              textAlign: TextAlign.center,
-              style: const TextStyle(color: MenuPalette.muted),
-            ),
-            if (actionLabel != null) ...[
-              const SizedBox(height: 12),
-              TextButton(
-                onPressed: onAction,
-                child: Text(
-                  actionLabel!,
-                  style: const TextStyle(color: MenuPalette.gold),
-                ),
-              ),
-            ],
-          ],
         ),
       ),
     );

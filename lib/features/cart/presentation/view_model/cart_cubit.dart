@@ -128,7 +128,7 @@ class CartCubit extends Cubit<CartState> {
         .map((item) {
           final updatedMeal =
               mealsById[item.meal.id] ?? item.meal.copyWith(isAvailable: false);
-          return _sameMeal(item.meal, updatedMeal)
+          return item.meal == updatedMeal
               ? item
               : CartItem(meal: updatedMeal, quantity: item.quantity);
         })
@@ -139,21 +139,12 @@ class CartCubit extends Cubit<CartState> {
     if (first.length != second.length) return false;
     for (var index = 0; index < first.length; index++) {
       if (first[index].quantity != second[index].quantity ||
-          !_sameMeal(first[index].meal, second[index].meal)) {
+          first[index].meal != second[index].meal) {
         return false;
       }
     }
     return true;
   }
-
-  bool _sameMeal(MealModel first, MealModel second) =>
-      first.id == second.id &&
-      first.name == second.name &&
-      first.category == second.category &&
-      first.price == second.price &&
-      first.imageUrl == second.imageUrl &&
-      first.description == second.description &&
-      first.isAvailable == second.isAvailable;
 
   CartRemoval? remove(String mealId) {
     final index = state.items.indexWhere((item) => item.meal.id == mealId);

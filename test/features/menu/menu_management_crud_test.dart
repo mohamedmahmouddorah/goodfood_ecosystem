@@ -992,7 +992,6 @@ class _InMemoryMenuRemoteService implements MenuRemoteService {
     }
   }
 
-  @override
   Future<MealModel?> fetchMeal(String id) async => meals[id];
 
   MealModel _withId(MealModel meal, String id, {bool? isAvailable}) =>
@@ -1034,6 +1033,14 @@ class _InMemoryMealLocalCache implements MealLocalCache {
 
   @override
   Future<CachedMeals?> readMeals() async => snapshot;
+
+  @override
+  Future<MealModel?> readMeal(String id) async {
+    for (final meal in snapshot?.meals ?? const <MealModel>[]) {
+      if (meal.id == id) return meal;
+    }
+    return null;
+  }
 
   @override
   Future<void> replaceMeals(List<MealModel> meals) async {

@@ -15,86 +15,77 @@ class MenuFailure implements Exception {
 /// The Cubit talks to this class only. It never sees Firestore errors.
 class MenuRepository {
   MenuRepository(this._service, {MealLocalCache? mealLocalCache})
-    : _mealLocalCache = mealLocalCache;
+    : _cache = mealLocalCache;
 
   final MenuRemoteService _service;
-  final MealLocalCache? _mealLocalCache;
+  final MealLocalCache? _cache;
 
-  Future<MealModel?> getMeal(String id) => _guard(() => _service.fetchMeal(id));
+  // ───────────── Streams (the cache here is best-effort) ─────────────
 
   Stream<RemoteMealsSnapshot> watchAvailableMeals() async* {
     try {
-      final cachedMeals = await _readCachedMeals();
-      if (cachedMeals != null) {
+      final cached = await _readCacheSafely();
+      if (cached != null) {
         yield RemoteMealsSnapshot(
-          meals: cachedMeals.meals.where((meal) => meal.isAvailable).toList(),
+          meals: cached.meals
+              .where((meal) => meal.isAvailable)
+              .toList(growable: false),
           isFromCache: true,
           hasPendingWrites: false,
         );
       }
-
-      final cache = _mealLocalCache;
       await for (final snapshot in _service.watchAvailable()) {
-        if (!snapshot.isFromCache &&
-            !snapshot.hasPendingWrites &&
-            cache != null) {
-          await _writeLocal(() => cache.replaceAvailableMeals(snapshot.meals));
-        }
         yield snapshot;
-      }
-    } on FirebaseException catch (e) {
-      throw MenuFailure(_firebaseMessage(e));
-    }
-  }
-
-  Stream<List<MealModel>> watchAllMeals({MealCategory? category}) async* {
-    try {
-      final cachedMeals = await _readCachedMeals();
-      if (cachedMeals != null) yield cachedMeals.meals;
-
-      final cache = _mealLocalCache;
-      await for (final snapshot in _service.watchAll(
-        category: category,
-        includeHidden: true,
-      )) {
-        if (!snapshot.isFromCache &&
-            !snapshot.hasPendingWrites &&
-            cache != null) {
-          await _writeLocal(() => cache.replaceMeals(snapshot.meals));
+        if (_shouldPersist(snapshot)) {
+          await _writeCacheSafely(
+            (cache) => cache.replaceAvailableMeals(snapshot.meals),
+          );
         }
-        yield snapshot.meals;
       }
     } on FirebaseException catch (e) {
       throw MenuFailure(_firebaseMessage(e));
     }
   }
+
+  Stream<List<MealModel>> watchAllMeals() async* {
+    try {
+      final cached = await _readCacheSafely();
+      if (cached != null) yield cached.meals;
+      await for (final snapshot in _service.watchAll(includeHidden: true)) {
+        yield snapshot.meals;
+        if (_shouldPersist(snapshot)) {
+          await _writeCacheSafely(
+            (cache) => cache.replaceMeals(snapshot.meals),
+          );
+        }
+      }
+    } on FirebaseException catch (e) {
+      throw MenuFailure(_firebaseMessage(e));
+    }
+  }
+
+  // ───────────── Mutations (local first, rollback on failure) ─────────────
 
   Future<String> addMeal(MealModel meal) async {
     final id = meal.id.isEmpty ? _service.newMealId() : meal.id;
     final localMeal = meal.copyWith(id: id);
-    await _writeLocal(
-      () => _mealLocalCache?.upsertMeal(localMeal) ?? Future<void>.value(),
-    );
+    await _local((cache) => cache.upsertMeal(localMeal));
     try {
       await _guard(() => _service.add(localMeal));
       return id;
     } on MenuFailure {
-      await _writeLocal(
-        () => _mealLocalCache?.removeMeal(id) ?? Future<void>.value(),
-      );
+      await _local((cache) => cache.removeMeal(id));
       rethrow;
     }
   }
 
   Future<void> updateMeal(MealModel meal) async {
     final previous = await _cachedMeal(meal.id);
-    await _writeLocal(
-      () => _mealLocalCache?.upsertMeal(meal) ?? Future<void>.value(),
-    );
+    await _local((cache) => cache.upsertMeal(meal));
     try {
       await _guard(() => _service.update(meal));
     } on MenuFailure {
-      await _restoreCachedMeal(meal.id, previous);
+      await _restore(meal.id, previous);
       rethrow;
     }
   }
@@ -102,72 +93,78 @@ class MenuRepository {
   Future<void> setAvailability(String id, bool value, {MealModel? meal}) async {
     final previous = await _cachedMeal(id) ?? meal;
     if (previous != null) {
-      await _writeLocal(
-        () =>
-            _mealLocalCache?.upsertMeal(
-              previous.copyWith(isAvailable: value),
-            ) ??
-            Future<void>.value(),
+      await _local(
+        (cache) => cache.upsertMeal(previous.copyWith(isAvailable: value)),
       );
     }
     try {
       await _guard(() => _service.setAvailability(id, value));
     } on MenuFailure {
-      await _restoreCachedMeal(id, previous);
+      await _restore(id, previous);
       rethrow;
     }
   }
 
   Future<void> deleteMeal(String id, {MealModel? meal}) async {
     final previous = await _cachedMeal(id) ?? meal;
-    await _writeLocal(
-      () => _mealLocalCache?.removeMeal(id) ?? Future<void>.value(),
-    );
+    await _local((cache) => cache.removeMeal(id));
     try {
       await _guard(() => _service.delete(id));
     } on MenuFailure {
-      await _restoreCachedMeal(id, previous);
+      await _restore(id, previous);
       rethrow;
     }
   }
 
-  Future<MealModel?> _cachedMeal(String id) async {
-    final cachedMeals = await _readCachedMeals();
-    for (final meal in cachedMeals?.meals ?? const <MealModel>[]) {
-      if (meal.id == id) return meal;
-    }
-    return null;
-  }
+  // ───────────── Cache helpers ─────────────
 
-  Future<void> _restoreCachedMeal(String id, MealModel? meal) async {
-    if (meal == null) {
-      await _writeLocal(
-        () => _mealLocalCache?.removeMeal(id) ?? Future<void>.value(),
-      );
-    } else {
-      await _writeLocal(
-        () => _mealLocalCache?.upsertMeal(meal) ?? Future<void>.value(),
-      );
-    }
-  }
+  bool _shouldPersist(RemoteMealsSnapshot s) =>
+      _cache != null && !s.isFromCache && !s.hasPendingWrites;
 
-  Future<CachedMeals?> _readCachedMeals() async {
-    final cache = _mealLocalCache;
+  Future<CachedMeals?> _readCacheSafely() async {
+    final cache = _cache;
     if (cache == null) return null;
-    return _runLocal(() => cache.readMeals());
+    try {
+      return await cache.readMeals();
+    } catch (error, stackTrace) {
+      debugPrint('Menu cache read failed: $error\n$stackTrace');
+      return null;
+    }
   }
 
-  Future<void> _writeLocal(Future<void> Function() write) => _runLocal(write);
-
-  Future<T> _runLocal<T>(Future<T> Function() operation) async {
+  Future<void> _writeCacheSafely(
+    Future<void> Function(MealLocalCache cache) write,
+  ) async {
+    final cache = _cache;
+    if (cache == null) return;
     try {
-      return await operation();
+      await write(cache);
+    } catch (error, stackTrace) {
+      debugPrint('Menu cache write failed: $error\n$stackTrace');
+    }
+  }
+
+  /// For mutations: a local failure is reported to the user.
+  Future<T?> _local<T>(Future<T> Function(MealLocalCache cache) operation) async {
+    final cache = _cache;
+    if (cache == null) return null;
+    try {
+      return await operation(cache);
     } on Exception catch (error, stackTrace) {
       debugPrint('Menu local cache operation failed: $error\n$stackTrace');
       throw const MenuFailure(
         'Could not access local menu storage. Check device storage and try again.',
       );
     }
+  }
+
+  Future<MealModel?> _cachedMeal(String id) =>
+      _local<MealModel?>((cache) => cache.readMeal(id));
+
+  Future<void> _restore(String id, MealModel? meal) async {
+    await _local(
+      (cache) => meal == null ? cache.removeMeal(id) : cache.upsertMeal(meal),
+    );
   }
 
   Future<T> _guard<T>(Future<T> Function() run) async {

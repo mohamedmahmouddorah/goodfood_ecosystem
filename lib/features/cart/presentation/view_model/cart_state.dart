@@ -107,18 +107,5 @@ class CartState {
     return CartState(items: updated);
   }
 
-  CartState restore(CartItem item) {
-    final index = items.indexWhere(
-      (existing) => existing.meal.id == item.meal.id,
-    );
-    if (index == -1) {
-      return CartState(items: [...items, item]);
-    }
-
-    final updated = [...items];
-    updated[index] = updated[index].copyWith(
-      quantity: updated[index].quantity + item.quantity,
-    );
-    return CartState(items: updated);
-  }
+  CartState restore(CartItem item) => insert(item, items.length);
 }
