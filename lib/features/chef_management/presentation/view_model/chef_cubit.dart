@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../data/models/user_model.dart';
+import 'package:goodfood_ecosystem/features/auth/data/model/user_model.dart';
 import '../../data/repositories/chef_repository.dart';
 import 'chef_state.dart';
 
@@ -85,7 +85,7 @@ class ChefCubit extends Cubit<ChefState> {
 
   Future<void> toggleStatus(UserModel chef) async {
     final newStatus =
-        chef.isActive ? AccountStatus.Inactive : AccountStatus.Active;
+        chef.status == AccountStatus.Active ? AccountStatus.Inactive : AccountStatus.Active;
     final uid = chef.uid;
     if (uid == null) return;
 
