@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:goodfood_ecosystem/features/auth/data/model/user_model.dart';
 import '../../../../core/constants/app_colors.dart';
-import '../../data/models/user_model.dart';
 
 class ChefCard extends StatelessWidget {
   final UserModel chef;

@@ -74,4 +74,26 @@ class UserModel {
       startDate: (data["start_date"] as Timestamp).toDate(),
     );
   }
+  UserModel copyWith({
+  String? uid,
+  String? name,
+  String? imgUrl,
+  String? email,
+  String? phone,
+  Role? role,
+  AccountStatus? status,
+  DateTime? startDate,
+}) {
+  return UserModel(
+    uid: uid ?? this.uid,
+    name: name ?? this.name,
+    imgUrl: imgUrl ?? this.imgUrl,
+    email: email ?? this.email,
+    phone: phone ?? this.phone,
+    role: role ?? this.role,
+    status: status ?? this.status,
+    startDate: startDate ?? this.startDate,
+  );
+}
+bool get isActive => status == AccountStatus.Active;
 }

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:goodfood_ecosystem/features/auth/data/model/user_model.dart';
 import '../../../../core/constants/app_colors.dart';
-import '../../data/models/user_model.dart';
 
 class AddEditChefDialog extends StatefulWidget {
   final UserModel? chefToEdit;
@@ -48,7 +48,7 @@ class _AddEditChefDialogState extends State<AddEditChefDialog> {
         TextEditingController(text: widget.chefToEdit?.email ?? '');
     _phoneController =
         TextEditingController(text: widget.chefToEdit?.phone ?? '');
-    _isActive = widget.chefToEdit?.isActive ?? true;
+    _isActive = widget.chefToEdit?.status == AccountStatus.Active ?? true;
   }
 
   @override

@@ -1,7 +1,7 @@
-import '../../data/models/user_model.dart';
+
+import 'package:goodfood_ecosystem/features/auth/data/model/user_model.dart';
 
 enum ChefStatus { initial, loading, success, error }
-
 class ChefState {
   final List<UserModel> allChefs;
   final String searchQuery;
@@ -25,8 +25,8 @@ class ChefState {
 
   List<UserModel> get filteredChefs {
     return allChefs.where((chef) {
-      if (selectedFilter == 'Active' && !chef.isActive) return false;
-      if (selectedFilter == 'Inactive' && chef.isActive) return false;
+      if (selectedFilter == 'Active' && chef.status == AccountStatus.Inactive) return false;
+      if (selectedFilter == 'Inactive' && chef.status == AccountStatus.Active) return false;
 
       if (searchQuery.isNotEmpty) {
         final query = searchQuery.toLowerCase();

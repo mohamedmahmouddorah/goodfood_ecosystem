@@ -1,7 +1,8 @@
 import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
-import '../models/user_model.dart';
+import 'package:goodfood_ecosystem/features/auth/data/model/user_model.dart';
+
 
 class ChefRemoteService {
   static final ChefRemoteService instance = ChefRemoteService._internal();
@@ -31,7 +32,7 @@ class ChefRemoteService {
         return snapshot.docs.map((doc) {
           final data = doc.data();
           data['uid'] = doc.id;
-          return UserModel.fromMap(data, doc.id);
+          return UserModel.fromMap(data);
         }).toList();
       });
     }
