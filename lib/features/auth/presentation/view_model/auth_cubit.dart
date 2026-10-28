@@ -10,7 +10,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class AuthCubit extends Cubit<AuthState> {
   AuthCubit() : super(AuthIntialState());
-  UserModel? currentUser;
+  UserModel? currentUser; 
   final authInstance = FirebaseAuth.instance;
   final storeInstance = FirebaseFirestore.instance;
   Future<void> login(String email, String pass) async {
