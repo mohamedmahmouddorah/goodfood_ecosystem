@@ -62,7 +62,7 @@ class MyApp extends StatelessWidget {
         '/welcome':(context) => WelcomeView(),
         '/role_selection' : (context) => RoleView()
       },
-      home: SplashView(),
+      home: MenuScreen(repository: repository,),
     );
   }
 }

@@ -3,11 +3,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../../../../core/widgets/app_snack_bar.dart';
-import '../../../cart/presentation/view/cart_screen.dart';
-import '../../../cart/data/services/cart_local_storage.dart';
-import '../../../cart/presentation/view_model/cart_cubit.dart';
-import '../../../cart/presentation/view_model/cart_state.dart';
 import '../../data/models/meal_model.dart';
 import '../../data/repositories/menu_repository.dart';
 import '../view_model/menu_cubit.dart';
@@ -29,9 +24,6 @@ class MenuScreen extends StatelessWidget {
     return MultiBlocProvider(
       providers: [
         BlocProvider(create: (_) => MenuCubit(repository)..load()),
-        BlocProvider(
-          create: (_) => CartCubit(storage: SqliteCartLocalStorage()),
-        ),
       ],
       child: _MenuView(repository: repository),
     );
@@ -64,21 +56,7 @@ class _MenuViewState extends State<_MenuView> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocListener<CartCubit, CartState>(
-      listenWhen: (previous, current) =>
-          previous.storageError != current.storageError &&
-          current.storageError != null,
-      listener: (context, state) {
-        showAppSnackBar(context, message: state.storageError!);
-      },
-      child: BlocListener<MenuCubit, MenuState>(
-        listenWhen: (_, current) => current.status == MenuStatus.success,
-        listener: (context, _) {
-          context.read<CartCubit>().syncAvailableMeals(
-            context.read<MenuCubit>().availableMeals,
-          );
-        },
-        child: Scaffold(
+    return Scaffold(
           backgroundColor: MenuPalette.bg,
           appBar: AppBar(
             backgroundColor: MenuPalette.bg,
@@ -89,7 +67,7 @@ class _MenuViewState extends State<_MenuView> {
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 1100),
                 child: _MenuHeader(
-                  onCartTap: () => _openCart(context),
+                  onCartTap: () => (){},
                   onAdminTap: () => _openAdmin(context),
                 ),
               ),
@@ -269,7 +247,7 @@ class _MenuViewState extends State<_MenuView> {
                               return MealCard(
                                 meal: meal,
                                 onTap: () => _openMeal(context, meal),
-                                onAdd: () => _addToCart(context, meal),
+                                onAdd: () => (){},
                               );
                             },
                           ),
@@ -282,9 +260,7 @@ class _MenuViewState extends State<_MenuView> {
             },
           ),
           bottomNavigationBar: const _MenuBottomNavigation(),
-        ),
-      ),
-    );
+        );
   }
 
   void _openMeal(BuildContext context, MealModel meal) {
@@ -294,7 +270,7 @@ class _MenuViewState extends State<_MenuView> {
         reverseTransitionDuration: const Duration(milliseconds: 150),
         pageBuilder: (_, _, _) => MealDetailsScreen(
           meal: meal,
-          onAdd: () => _addToCart(context, meal),
+          onAdd: () => (){},
         ),
         transitionsBuilder: (_, animation, _, child) =>
             FadeTransition(opacity: animation, child: child),
@@ -310,55 +286,7 @@ class _MenuViewState extends State<_MenuView> {
     );
   }
 
-  void _openCart(BuildContext context) {
-    _cartNotificationTimer?.cancel();
-    _cartNotificationController = null;
-    clearAppSnackBars(context);
-    Navigator.of(context).push(
-      PageRouteBuilder<void>(
-        transitionDuration: const Duration(milliseconds: 180),
-        reverseTransitionDuration: const Duration(milliseconds: 150),
-        pageBuilder: (_, _, _) => BlocProvider.value(
-          value: context.read<CartCubit>(),
-          child: const CartScreen(),
-        ),
-        transitionsBuilder: (_, animation, _, child) =>
-            FadeTransition(opacity: animation, child: child),
-      ),
-    );
-  }
 
-  void _addToCart(BuildContext context, MealModel meal) {
-    context.read<CartCubit>().add(meal);
-    _cartNotificationMessage.value = '${meal.name} added to your cart.';
-
-    if (_cartNotificationController == null) {
-      _cartNotificationController = showAppSnackBar(
-        context,
-        message: _cartNotificationMessage.value,
-        messageListenable: _cartNotificationMessage,
-        duration: const Duration(days: 1),
-        action: SnackBarAction(
-          label: 'View cart',
-          textColor: MenuPalette.gold,
-          onPressed: () => _openCart(context),
-        ),
-      );
-      final controller = _cartNotificationController;
-      controller!.closed.whenComplete(() {
-        if (identical(_cartNotificationController, controller)) {
-          _cartNotificationController = null;
-          _cartNotificationTimer?.cancel();
-        }
-      });
-    }
-
-    _cartNotificationTimer?.cancel();
-    _cartNotificationTimer = Timer(const Duration(seconds: 3), () {
-      if (!mounted) return;
-      _cartNotificationController?.close();
-    });
-  }
 }
 
 class _MenuHeader extends StatelessWidget {
@@ -382,7 +310,6 @@ class _MenuHeader extends StatelessWidget {
                   style: TextStyle(color: Colors.white, fontSize: 16),
                 ),
               ),
-              _cartButton(compact: true),
               _adminButton(),
             ],
           );
@@ -429,7 +356,6 @@ class _MenuHeader extends StatelessWidget {
                 ],
               ),
             ),
-            _cartButton(compact: true),
             _adminButton(),
           ],
         );
@@ -449,28 +375,6 @@ class _MenuHeader extends StatelessWidget {
     ),
   );
 
-  Widget _cartButton({required bool compact}) =>
-      BlocBuilder<CartCubit, CartState>(
-        builder: (context, state) => Badge(
-          isLabelVisible: state.itemCount > 0,
-          label: Text('${state.itemCount}'),
-          backgroundColor: MenuPalette.success,
-          child: IconButton(
-            onPressed: onCartTap,
-            tooltip: 'Open cart',
-            visualDensity: VisualDensity.compact,
-            constraints: BoxConstraints.tightFor(
-              width: compact ? 36 : 40,
-              height: 40,
-            ),
-            padding: EdgeInsets.zero,
-            icon: const Icon(
-              Icons.shopping_bag_outlined,
-              color: MenuPalette.gold,
-            ),
-          ),
-        ),
-      );
 }
 
 class _MenuBottomNavigation extends StatelessWidget {
