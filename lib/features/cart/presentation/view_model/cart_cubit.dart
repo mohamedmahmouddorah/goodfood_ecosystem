@@ -37,7 +37,10 @@ class CartCubit extends Cubit<CartState> {
         final changed = !_sameItems(baseItems, updatedItems);
         emit(
           _hasLocalChanges
-              ? state.copyWith(items: updatedItems, isLoading: false)
+              ? state.copyWith(
+                  items: updatedItems,
+                  isLoading: false,
+                )
               : CartState(items: updatedItems),
         );
         if (changed) {

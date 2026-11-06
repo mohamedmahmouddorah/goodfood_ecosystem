@@ -41,6 +41,7 @@ class MealCard extends StatelessWidget {
                         borderRadius: BorderRadius.circular(10),
                         child: MealImage(
                           url: meal.imageUrl,
+                          localPath: meal.localImagePath,
                           width: double.infinity,
                           cacheWidth: 600,
                         ),

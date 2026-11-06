@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/app_snack_bar.dart';
 import '../../../menu/presentation/widgets/meal_image.dart';
 import '../../../menu/presentation/widgets/menu_palette.dart';
@@ -706,18 +707,14 @@ class _EmptyCart extends StatelessWidget {
                   ),
                 )
               else
-                OutlinedButton.icon(
+                AppButton(
                   onPressed: () => Navigator.of(context).pop(),
-                  icon: const Icon(Icons.restaurant_menu),
-                  label: Text(narrow ? 'Browse' : 'Browse menu'),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: MenuPalette.gold,
-                    side: const BorderSide(color: MenuPalette.goldDark),
-                    visualDensity: narrow
-                        ? VisualDensity.compact
-                        : VisualDensity.standard,
-                    padding: EdgeInsets.symmetric(horizontal: narrow ? 8 : 16),
-                  ),
+                  icon: Icons.restaurant_menu,
+                  variant: AppButtonVariant.outlined,
+                  foregroundColor: MenuPalette.gold,
+                  borderColor: MenuPalette.goldDark,
+                  minimumHeight: narrow ? 40 : 44,
+                  child: Text(narrow ? 'Browse' : 'Browse menu'),
                 ),
             ],
           ),

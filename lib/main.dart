@@ -12,7 +12,7 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   FirebaseFirestore.instance.settings = const Settings(
-    persistenceEnabled: true,
+    persistenceEnabled: false,
   );
 
   // Built once, not inside build().
@@ -20,6 +20,7 @@ Future<void> main() async {
     MenuRemoteService(FirebaseFirestore.instance),
     mealLocalCache: SqliteMealLocalCache(),
   );
+  repository.startSync();
   runApp(MyApp(repository: repository));
 }
 

@@ -43,6 +43,7 @@ class AdminMealTile extends StatelessWidget {
                           borderRadius: BorderRadius.circular(10),
                           child: MealImage(
                             url: meal.imageUrl,
+                            localPath: meal.localImagePath,
                             width: double.infinity,
                             height: narrow ? 72 : 100,
                             cacheWidth: 400,
@@ -129,6 +130,7 @@ class AdminMealTile extends StatelessWidget {
                           borderRadius: BorderRadius.circular(10),
                           child: MealImage(
                             url: meal.imageUrl,
+                            localPath: meal.localImagePath,
                             width: 56,
                             height: 56,
                             cacheWidth: 150,

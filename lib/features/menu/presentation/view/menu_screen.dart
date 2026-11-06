@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../core/widgets/app_bottom_navigation_bar.dart';
 import '../../../../core/widgets/app_snack_bar.dart';
 import '../../../cart/presentation/view/cart_screen.dart';
 import '../../../cart/data/services/cart_local_storage.dart';
@@ -72,7 +73,9 @@ class _MenuViewState extends State<_MenuView> {
         showAppSnackBar(context, message: state.storageError!);
       },
       child: BlocListener<MenuCubit, MenuState>(
-        listenWhen: (_, current) => current.status == MenuStatus.success,
+        listenWhen: (previous, current) =>
+            current.status == MenuStatus.success &&
+            previous.revision != current.revision,
         listener: (context, _) {
           context.read<CartCubit>().syncAvailableMeals(
             context.read<MenuCubit>().availableMeals,
@@ -281,7 +284,26 @@ class _MenuViewState extends State<_MenuView> {
               );
             },
           ),
-          bottomNavigationBar: const _MenuBottomNavigation(),
+          bottomNavigationBar: AppBottomNavigationBar(
+            items: const [
+              AppNavigationItem(label: 'Home', icon: Icons.home_outlined),
+              AppNavigationItem(
+                label: 'Orders',
+                icon: Icons.receipt_long_outlined,
+              ),
+              AppNavigationItem(
+                label: 'Menu',
+                icon: Icons.restaurant_menu_outlined,
+              ),
+              AppNavigationItem(label: 'Profile', icon: Icons.person_outline),
+            ],
+            selectedIndex: 2,
+            onDestinationSelected: (_) {},
+            backgroundColor: MenuPalette.bg,
+            indicatorColor: MenuPalette.surface,
+            selectedColor: MenuPalette.gold,
+            unselectedColor: MenuPalette.muted,
+          ),
         ),
       ),
     );
@@ -387,6 +409,7 @@ class _MenuHeader extends StatelessWidget {
             ],
           );
         }
+
         return Row(
           children: [
             Container(
@@ -471,77 +494,4 @@ class _MenuHeader extends StatelessWidget {
           ),
         ),
       );
-}
-
-class _MenuBottomNavigation extends StatelessWidget {
-  const _MenuBottomNavigation();
-
-  static const _items = [
-    (icon: Icons.home_outlined, label: 'Home'),
-    (icon: Icons.receipt_long_outlined, label: 'Orders'),
-    (icon: Icons.restaurant_menu_outlined, label: 'Menu'),
-    (icon: Icons.person_outline, label: 'Profile'),
-  ];
-
-  @override
-  Widget build(BuildContext context) {
-    return SafeArea(
-      top: false,
-      child: Container(
-        height: 62,
-        decoration: const BoxDecoration(
-          color: MenuPalette.bg,
-          border: Border(top: BorderSide(color: MenuPalette.border)),
-        ),
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            final showLabels = constraints.maxWidth >= 360;
-            return Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 1100),
-                child: Row(
-                  children: [
-                    for (var index = 0; index < _items.length; index++)
-                      Expanded(
-                        child: Semantics(
-                          button: true,
-                          selected: index == 2,
-                          label: _items[index].label,
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                _items[index].icon,
-                                size: 20,
-                                color: index == 2
-                                    ? MenuPalette.gold
-                                    : MenuPalette.muted,
-                              ),
-                              if (showLabels) ...[
-                                const SizedBox(height: 3),
-                                Text(
-                                  _items[index].label,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(
-                                    color: index == 2
-                                        ? MenuPalette.gold
-                                        : MenuPalette.muted,
-                                    fontSize: 10,
-                                  ),
-                                ),
-                              ],
-                            ],
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-            );
-          },
-        ),
-      ),
-    );
-  }
 }

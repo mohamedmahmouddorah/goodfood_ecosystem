@@ -26,6 +26,8 @@ class MealModel {
     required this.imageUrl,
     this.description = '',
     this.isAvailable = true,
+    this.localImagePath,
+    this.localImageName,
   });
 
   final String id;
@@ -35,6 +37,8 @@ class MealModel {
   final String imageUrl;
   final String description;
   final bool isAvailable;
+  final String? localImagePath;
+  final String? localImageName;
 
   @override
   bool operator ==(Object other) {
@@ -47,7 +51,9 @@ class MealModel {
             price == other.price &&
             imageUrl == other.imageUrl &&
             description == other.description &&
-            isAvailable == other.isAvailable;
+            isAvailable == other.isAvailable &&
+            localImagePath == other.localImagePath &&
+            localImageName == other.localImageName;
   }
 
   @override
@@ -59,6 +65,8 @@ class MealModel {
     imageUrl,
     description,
     isAvailable,
+    localImagePath,
+    localImageName,
   );
 
   factory MealModel.fromDoc(DocumentSnapshot<Map<String, dynamic>> doc) {
@@ -94,6 +102,9 @@ class MealModel {
     String? imageUrl,
     String? description,
     bool? isAvailable,
+    String? localImagePath,
+    String? localImageName,
+    bool clearLocalImagePath = false,
   }) => MealModel(
     id: id ?? this.id,
     name: name ?? this.name,
@@ -102,5 +113,11 @@ class MealModel {
     imageUrl: imageUrl ?? this.imageUrl,
     description: description ?? this.description,
     isAvailable: isAvailable ?? this.isAvailable,
+    localImagePath: clearLocalImagePath
+        ? null
+        : localImagePath ?? this.localImagePath,
+    localImageName: clearLocalImagePath
+        ? null
+        : localImageName ?? this.localImageName,
   );
 }

@@ -1,14 +1,19 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:http/http.dart' as http;
+import 'package:http/testing.dart';
 import 'package:path/path.dart' as p;
 import 'package:goodfood_ecosystem/features/menu/data/models/meal_model.dart';
 import 'package:goodfood_ecosystem/features/menu/data/repositories/menu_repository.dart';
 import 'package:goodfood_ecosystem/features/menu/data/services/meal_local_cache.dart';
+import 'package:goodfood_ecosystem/features/menu/data/services/meal_image_storage_service.dart';
 import 'package:goodfood_ecosystem/features/menu/data/services/menu_remote_service.dart';
 import 'package:goodfood_ecosystem/features/menu/presentation/view/add_edit_meal_screen.dart';
 import 'package:goodfood_ecosystem/features/menu/presentation/view/menu_management_screen.dart';
@@ -19,6 +24,45 @@ import 'package:goodfood_ecosystem/features/menu/presentation/view_model/menu_st
 import 'package:goodfood_ecosystem/features/menu/presentation/widgets/meal_image.dart';
 
 void main() {
+  test(
+    'image upload sends multipart data and the supplied ImgBB key',
+    () async {
+      late http.Request request;
+      final client = MockClient((incoming) async {
+        request = incoming;
+        return http.Response(
+          jsonEncode({
+            'success': true,
+            'data': {'url': 'https://images.example.test/meal.jpg'},
+          }),
+          200,
+        );
+      });
+      final service = ImgBbMealImageStorageService(
+        apiKey: 'test-imgbb-key',
+        endpoint: Uri.https('example.test', '/1/upload'),
+        client: client,
+      );
+
+      await service.upload(
+        PickedMealImage(
+          bytes: Uint8List.fromList([1]),
+          extension: 'jpg',
+          fileName: 'meal.jpg',
+        ),
+      );
+
+      expect(request.method, 'POST');
+      expect(request.url.queryParameters['key'], 'test-imgbb-key');
+      expect(
+        request.headers['content-type'],
+        startsWith('multipart/form-data;'),
+      );
+      expect(request.body, contains('name="image"; filename="meal.jpg"'));
+      client.close();
+    },
+  );
+
   test('SQLite cache persists meals after the first Firebase sync', () async {
     final directory = await Directory.systemTemp.createTemp('goodfood-menu-');
     final databasePath = p.join(directory.path, 'meals.db');
@@ -342,6 +386,36 @@ void main() {
     await service.dispose();
   });
 
+  test(
+    'customer menu clears cache banner when server confirms cached data',
+    () async {
+      const meal = MealModel(
+        id: 'cached-meal',
+        name: 'Cached meal',
+        category: MealCategory.starters,
+        price: 4,
+        imageUrl: '',
+      );
+      final service = _InMemoryMenuRemoteService()
+        ..seed([meal], isFromCache: true);
+      final cubit = MenuCubit(MenuRepository(service));
+
+      await cubit.load();
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+      expect(cubit.state.isFromCache, isTrue);
+      final revisionBeforeServerConfirmation = cubit.state.revision;
+
+      service.confirmServerSnapshot();
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+
+      expect(cubit.state.isFromCache, isFalse);
+      expect(cubit.state.meals, [meal]);
+      expect(cubit.state.revision, revisionBeforeServerConfirmation);
+      await cubit.close();
+      await service.dispose();
+    },
+  );
+
   test('cached meals remain available if Firebase refresh is denied', () async {
     const cachedMeal = MealModel(
       id: 'cached-meal',
@@ -612,6 +686,138 @@ void main() {
     },
   );
 
+  test('online outbox writes sync before save reports success', () async {
+    final directory = await Directory.systemTemp.createTemp('goodfood-menu-');
+    final cache = SqliteMealLocalCache(
+      databasePath: p.join(directory.path, 'meals.db'),
+    );
+    final service = _InMemoryMenuRemoteService();
+    final cubit = MenuManagementCubit(
+      MenuRepository(service, mealLocalCache: cache),
+    );
+    const meal = MealModel(
+      id: '',
+      name: 'Online meal',
+      category: MealCategory.mainCourse,
+      price: 7,
+      imageUrl: '',
+    );
+
+    final result = await cubit.save(meal);
+
+    expect(result, MealSaveResult.saved);
+    expect(service.meals.values.single.name, meal.name);
+    expect(await cache.readPendingMutations(), isEmpty);
+    await cubit.close();
+    await cache.close();
+    await service.dispose();
+    await directory.delete(recursive: true);
+  });
+
+  test('offline outbox writes remain local and pending', () async {
+    final directory = await Directory.systemTemp.createTemp('goodfood-menu-');
+    final cache = SqliteMealLocalCache(
+      databasePath: p.join(directory.path, 'meals.db'),
+    );
+    final service = _OfflineAddMenuRemoteService();
+    final cubit = MenuManagementCubit(
+      MenuRepository(service, mealLocalCache: cache),
+    );
+    const meal = MealModel(
+      id: '',
+      name: 'Offline meal',
+      category: MealCategory.mainCourse,
+      price: 7,
+      imageUrl: '',
+    );
+
+    final result = await cubit.save(meal);
+    final cachedMeals = (await cache.readMeals())!.meals;
+
+    expect(result, MealSaveResult.pending);
+    expect(cachedMeals.single.name, meal.name);
+    expect(await cache.readPendingMutations(), hasLength(1));
+    await cubit.close();
+    await cache.close();
+    await service.dispose();
+    await directory.delete(recursive: true);
+  });
+
+  test(
+    'image network failures keep the meal queued with a retry message',
+    () async {
+      final directory = await Directory.systemTemp.createTemp('goodfood-menu-');
+      final imageFile = File(p.join(directory.path, 'meal.jpg'));
+      await imageFile.writeAsBytes([1, 2, 3]);
+      final cache = SqliteMealLocalCache(
+        databasePath: p.join(directory.path, 'meals.db'),
+      );
+      final service = _InMemoryMenuRemoteService();
+      final repository = MenuRepository(
+        service,
+        mealLocalCache: cache,
+        imageStorage: _OfflineMealImageStorageService(),
+      );
+      final cubit = MenuManagementCubit(repository);
+      final meal = MealModel(
+        id: '',
+        name: 'Offline image meal',
+        category: MealCategory.mainCourse,
+        price: 7,
+        imageUrl: '',
+        localImagePath: imageFile.path,
+        localImageName: 'meal.jpg',
+      );
+
+      final result = await cubit.save(meal);
+
+      expect(result, MealSaveResult.pending);
+      expect(cubit.syncErrorMessage, contains('saved on this device'));
+      expect(cubit.syncErrorMessage, contains('upload automatically'));
+      expect(cubit.syncErrorMessage, contains('sync to Firebase'));
+      expect(await cache.readPendingMutations(), hasLength(1));
+      expect(await imageFile.exists(), isTrue);
+      await cubit.close();
+      await cache.close();
+      await service.dispose();
+      await directory.delete(recursive: true);
+    },
+  );
+
+  test(
+    'permission-denied sync reports missing Firebase admin access',
+    () async {
+      final directory = await Directory.systemTemp.createTemp('goodfood-menu-');
+      final cache = SqliteMealLocalCache(
+        databasePath: p.join(directory.path, 'meals.db'),
+      );
+      final service = _DeniedAddMenuRemoteService();
+      final cubit = MenuManagementCubit(
+        MenuRepository(service, mealLocalCache: cache),
+      );
+      const meal = MealModel(
+        id: '',
+        name: 'Admin-only meal',
+        category: MealCategory.mainCourse,
+        price: 7,
+        imageUrl: '',
+      );
+
+      final result = await cubit.save(meal);
+
+      expect(result, MealSaveResult.pending);
+      expect(
+        cubit.syncErrorMessage,
+        contains('signed-in admin with the admin: true claim'),
+      );
+      expect(await cache.readPendingMutations(), hasLength(1));
+      await cubit.close();
+      await cache.close();
+      await service.dispose();
+      await directory.delete(recursive: true);
+    },
+  );
+
   test('Firebase permission errors explain blocked cloud writes', () async {
     final service = _DeniedAddMenuRemoteService();
     final repository = MenuRepository(service);
@@ -629,7 +835,7 @@ void main() {
         isA<MenuFailure>().having(
           (error) => error.message,
           'message',
-          contains('Firebase rules denied access'),
+          contains('signed-in admin with the admin: true claim'),
         ),
       ),
     );
@@ -921,6 +1127,11 @@ class _InMemoryMenuRemoteService implements MenuRemoteService {
     _isFromCache = isFromCache;
   }
 
+  void confirmServerSnapshot() {
+    _isFromCache = false;
+    _changes.add(null);
+  }
+
   List<MealModel> _filtered({MealCategory? category}) => meals.values
       .where((meal) => category == null || meal.category == category)
       .toList(growable: false);
@@ -978,6 +1189,14 @@ class _InMemoryMenuRemoteService implements MenuRemoteService {
   }
 
   @override
+  Future<void> updateImageUrl(String id, String imageUrl) async {
+    final meal = meals[id];
+    if (meal == null) throw StateError('Meal not found.');
+    meals[id] = meal.copyWith(imageUrl: imageUrl);
+    _changes.add(null);
+  }
+
+  @override
   Future<void> delete(String id) async {
     meals.remove(id);
     _changes.add(null);
@@ -991,6 +1210,9 @@ class _InMemoryMenuRemoteService implements MenuRemoteService {
       _changes.add(null);
     }
   }
+
+  @override
+  Future<void> waitForPendingWrites() async {}
 
   Future<MealModel?> fetchMeal(String id) async => meals[id];
 
@@ -1096,6 +1318,23 @@ class _DeniedAddMenuRemoteService extends _InMemoryMenuRemoteService {
     throw FirebaseException(
       plugin: 'cloud_firestore',
       code: 'permission-denied',
+    );
+  }
+}
+
+class _OfflineAddMenuRemoteService extends _InMemoryMenuRemoteService {
+  @override
+  Future<void> add(MealModel meal) async {
+    throw FirebaseException(plugin: 'cloud_firestore', code: 'unavailable');
+  }
+}
+
+class _OfflineMealImageStorageService implements MealImageStorageService {
+  @override
+  Future<String> upload(PickedMealImage image) async {
+    throw http.ClientException(
+      "Failed host lookup: 'api.imgbb.com'",
+      Uri.https('api.imgbb.com', '/1/upload'),
     );
   }
 }
