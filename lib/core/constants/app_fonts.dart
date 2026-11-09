@@ -16,6 +16,16 @@ class AppFonts {
     fontSize: 18,
     fontWeight: .w400
   );
+    static final boldSubTitleWhite18 = TextStyle(
+    color:  Colors.white,
+    fontSize: 18,
+    fontWeight: .bold
+  );
+  static final reqularSubTitleWhite18 = TextStyle(
+    color:  Colors.white,
+    fontSize: 18,
+    fontWeight: .w400
+  );
   static final smallGoldTiltle = TextStyle(
     color: AppColors.goldenYellow,
     fontSize: 12,

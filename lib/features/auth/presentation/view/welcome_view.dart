@@ -36,7 +36,9 @@ class WelcomeView extends StatelessWidget {
                     Text("Good food, Better moments" , style: AppFonts.subTitle,),
                     Padding(
                       padding: const EdgeInsets.symmetric(vertical: 32.0),
-                      child: ElevatedButton(onPressed: (){},
+                      child: ElevatedButton(onPressed: (){
+                        Navigator.pushNamed(context, '/customer_details');
+                      },
                        style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.goldDark,
                         minimumSize: Size(350, 55)

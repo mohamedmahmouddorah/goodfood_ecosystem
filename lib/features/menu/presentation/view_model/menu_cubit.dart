@@ -10,9 +10,9 @@ import 'meal_search_index.dart';
 import 'menu_state.dart';
 
 class MenuCubit extends Cubit<MenuState> {
-  MenuCubit(this._repo) : super(const MenuState());
+  MenuCubit({required this.repo}) : super(const MenuState());
 
-  final MenuRepository _repo;
+  final MenuRepository repo;
   Timer? _debounce;
   StreamSubscription<RemoteMealsSnapshot>? _subscription;
   List<MealModel> _allMeals = const [];
@@ -31,7 +31,7 @@ class MenuCubit extends Cubit<MenuState> {
         isFromCache: false,
       ),
     );
-    _subscription = _repo.watchAvailableMeals().listen(
+    _subscription = repo.watchAvailableMeals().listen(
       (snapshot) {
         _hasSnapshot = true;
         _allMeals = snapshot.meals;

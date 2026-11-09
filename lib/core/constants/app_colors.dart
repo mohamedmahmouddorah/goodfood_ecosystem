@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 class AppColors {
   // Backgrounds
-  static const Color background = Color(0xFF111216);
+  static const Color background = Color(0xFF020F14);
   static const Color cardBackground = Color(0xFF181A20);
   static const Color cardBorder = Color(0xFF242731);
   static const Color inputBackground = Color(0xFF1B1D23);
@@ -10,7 +10,7 @@ class AppColors {
 
   // Brand / Accents
   static const Color primaryGold = Color(0xFFE5A93C);
-  static const Color goldDark = Color(0xFFC88C2B);
+  static const Color goldDark = Color(0xffF4B74F);
   static const Color goldLight = Color(0xFFF0BD63);
 
   // Buttons
