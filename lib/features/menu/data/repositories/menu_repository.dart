@@ -5,6 +5,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:path/path.dart' as p;
+import 'package:rxdart/rxdart.dart';
 
 import '../models/meal_model.dart';
 import '../services/meal_image_file_store.dart';
@@ -140,7 +141,14 @@ class MenuRepository {
   }
 
   /// Cached menu is emitted first so screens can render while offline.
-  Stream<RemoteMealsSnapshot> watchAvailableMeals() async* {
+  /// DebounceTime (300ms) is applied to avoid excessive stream emissions.
+  Stream<RemoteMealsSnapshot> watchAvailableMeals() {
+    return _watchAvailableMealsInternal().debounceTime(
+      const Duration(milliseconds: 300),
+    );
+  }
+
+  Stream<RemoteMealsSnapshot> _watchAvailableMealsInternal() async* {
     try {
       final cached = await _readCacheSafely();
       if (cached != null) {
@@ -170,7 +178,13 @@ class MenuRepository {
     }
   }
 
-  Stream<List<MealModel>> watchAllMeals() async* {
+  Stream<List<MealModel>> watchAllMeals() {
+    return _watchAllMealsInternal().debounceTime(
+      const Duration(milliseconds: 300),
+    );
+  }
+
+  Stream<List<MealModel>> _watchAllMealsInternal() async* {
     try {
       final cached = await _readCacheSafely();
       if (cached != null) yield cached.meals;

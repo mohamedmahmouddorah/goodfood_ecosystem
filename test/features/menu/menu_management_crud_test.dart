@@ -1337,6 +1337,14 @@ class _OfflineMealImageStorageService implements MealImageStorageService {
       Uri.https('api.imgbb.com', '/1/upload'),
     );
   }
+
+  @override
+  Future<String> uploadLocalMealImage(String localPath, {String? fileName}) async {
+    throw http.ClientException(
+      "Failed host lookup: 'api.imgbb.com'",
+      Uri.https('api.imgbb.com', '/1/upload'),
+    );
+  }
 }
 
 class _DeniedWatchMenuRemoteService extends _InMemoryMenuRemoteService {

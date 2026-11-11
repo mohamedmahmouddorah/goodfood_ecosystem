@@ -837,6 +837,12 @@ class _WindowsCameraScreenState extends State<_WindowsCameraScreen> {
   }
 
   Future<void> _initializeCamera() async {
+    if (_controller != null) {
+      final oldController = _controller;
+      _controller = null;
+      await oldController?.dispose();
+    }
+
     try {
       final cameras = await availableCameras();
       if (cameras.isEmpty) {
@@ -891,8 +897,7 @@ class _WindowsCameraScreenState extends State<_WindowsCameraScreen> {
               'Could not open Windows settings. Go to Settings > Privacy & security > Camera.',
         );
       }
-    } on Exception catch (error, stackTrace) {
-      debugPrint('Could not open Windows camera settings: $error\n$stackTrace');
+    } catch (error) {
       if (mounted) {
         showAppSnackBar(
           context,
@@ -948,7 +953,10 @@ class _WindowsCameraScreenState extends State<_WindowsCameraScreen> {
   @override
   void dispose() {
     final controller = _controller;
-    if (controller != null) unawaited(controller.dispose());
+    _controller = null;
+    if (controller != null) {
+      unawaited(controller.dispose());
+    }
     super.dispose();
   }
 
@@ -956,6 +964,7 @@ class _WindowsCameraScreenState extends State<_WindowsCameraScreen> {
   Widget build(BuildContext context) {
     final controller = _controller;
     final isReady = controller?.value.isInitialized ?? false;
+
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
@@ -963,76 +972,172 @@ class _WindowsCameraScreenState extends State<_WindowsCameraScreen> {
         foregroundColor: Colors.white,
         title: const Text('Take a photo'),
       ),
-      body: Column(
-        children: [
-          Expanded(
-            child: Center(
-              child: _errorMessage != null
-                  ? Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.all(24),
-                          child: Text(
-                            _cameraPermissionDenied
-                                ? 'Camera permission is disabled. Allow camera access for desktop apps in Windows settings.'
-                                : 'Camera unavailable: $_errorMessage',
-                            textAlign: TextAlign.center,
-                            style: const TextStyle(color: Colors.white),
-                          ),
-                        ),
-                        if (_cameraPermissionDenied)
-                          TextButton.icon(
-                            onPressed: _isOpeningSettings
-                                ? null
-                                : _openCameraSettings,
-                            icon: const Icon(Icons.settings_outlined),
-                            label: Text(
-                              _isOpeningSettings
-                                  ? 'Opening settings...'
-                                  : 'Open camera privacy settings',
+      body: SafeArea(
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            // On narrow desktop windows, stack the controls instead of
+            // forcing both buttons into a Row.
+            final isCompact = constraints.maxWidth < 320;
+
+            return Column(
+              children: [
+                // The preview receives only the space left after the controls.
+                // This prevents the camera preview from pushing the controls
+                // outside the available height.
+                Expanded(
+                  child: Center(
+                    child: _errorMessage != null
+                        ? SingleChildScrollView(
+                            padding: const EdgeInsets.all(20),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  _cameraPermissionDenied
+                                      ? 'Camera permission is disabled. Allow camera access for desktop apps in Windows settings.'
+                                      : 'Camera unavailable:\n$_errorMessage',
+                                  textAlign: TextAlign.center,
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 13,
+                                  ),
+                                ),
+                                const SizedBox(height: 12),
+                                if (_cameraPermissionDenied)
+                                  TextButton.icon(
+                                    onPressed: _isOpeningSettings
+                                        ? null
+                                        : _openCameraSettings,
+                                    icon: const Icon(
+                                      Icons.settings_outlined,
+                                    ),
+                                    label: const Text(
+                                      'Open camera privacy settings',
+                                      textAlign: TextAlign.center,
+                                    ),
+                                  )
+                                else
+                                  ElevatedButton.icon(
+                                    onPressed: _isTakingPhoto
+                                        ? null
+                                        : _initializeCamera,
+                                    icon: const Icon(Icons.refresh),
+                                    label: const Text('Retry Camera'),
+                                  ),
+                              ],
                             ),
-                          ),
-                      ],
-                    )
-                  : isReady && controller != null
-                  ? AspectRatio(
-                      aspectRatio: controller.value.aspectRatio,
-                      child: CameraPreview(controller),
-                    )
-                  : const CircularProgressIndicator(),
-            ),
-          ),
-          SafeArea(
-            top: false,
-            child: Padding(
-              padding: const EdgeInsets.all(20),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  TextButton.icon(
-                    onPressed: _isTakingPhoto ? null : _chooseFromDevice,
-                    icon: const Icon(Icons.photo_library_outlined),
-                    label: const Text('Choose from device'),
-                  ),
-                  IconButton.filled(
-                    onPressed: isReady && !_isTakingPhoto ? _takePhoto : null,
-                    icon: _isTakingPhoto
-                        ? const SizedBox(
-                            width: 22,
-                            height: 22,
-                            child: CircularProgressIndicator(strokeWidth: 2),
                           )
-                        : const Icon(Icons.camera_alt),
-                    iconSize: 32,
-                    tooltip: 'Take photo',
+                        : isReady && controller != null
+                            ? LayoutBuilder(
+                                builder: (context, previewConstraints) {
+                                  return Center(
+                                    child: ConstrainedBox(
+                                      constraints: BoxConstraints(
+                                        maxWidth: previewConstraints.maxWidth,
+                                        maxHeight: previewConstraints.maxHeight,
+                                      ),
+                                      child: AspectRatio(
+                                        aspectRatio:
+                                            controller.value.aspectRatio,
+                                        child: CameraPreview(controller),
+                                      ),
+                                    ),
+                                  );
+                                },
+                              )
+                            : const CircularProgressIndicator(),
                   ),
-                ],
-              ),
-            ),
-          ),
-        ],
+                ),
+
+                // Controls stay inside the available width. On very narrow
+                // windows they become vertical; otherwise the button label
+                // gets flexible space and can ellipsize safely.
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
+                  child: isCompact
+                      ? Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            TextButton.icon(
+                              onPressed: _isTakingPhoto
+                                  ? null
+                                  : _chooseFromDevice,
+                              icon: const Icon(
+                                Icons.photo_library_outlined,
+                              ),
+                              label: const Text(
+                                'Choose from device',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            Center(
+                              child: IconButton.filled(
+                                onPressed: isReady && !_isTakingPhoto
+                                    ? _takePhoto
+                                    : null,
+                                icon: _isTakingPhoto
+                                    ? const SizedBox(
+                                        width: 20,
+                                        height: 20,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          color: Colors.black,
+                                        ),
+                                      )
+                                    : const Icon(Icons.camera_alt),
+                                iconSize: 26,
+                                tooltip: 'Take photo',
+                              ),
+                            ),
+                          ],
+                        )
+                      : Row(
+                          children: [
+                            Expanded(
+                              child: TextButton.icon(
+                                onPressed: _isTakingPhoto
+                                    ? null
+                                    : _chooseFromDevice,
+                                icon: const Icon(
+                                  Icons.photo_library_outlined,
+                                ),
+                                label: const Text(
+                                  'Choose from device',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            IconButton.filled(
+                              onPressed: isReady && !_isTakingPhoto
+                                  ? _takePhoto
+                                  : null,
+                              icon: _isTakingPhoto
+                                  ? const SizedBox(
+                                      width: 20,
+                                      height: 20,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        color: Colors.black,
+                                      ),
+                                    )
+                                  : const Icon(Icons.camera_alt),
+                              iconSize: 26,
+                              tooltip: 'Take photo',
+                            ),
+                          ],
+                        ),
+                ),
+              ],
+            );
+          },
+        ),
       ),
     );
   }
+
 }

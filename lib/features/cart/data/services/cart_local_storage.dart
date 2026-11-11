@@ -1,9 +1,7 @@
-import 'package:flutter/foundation.dart';
-import 'package:path/path.dart' as p;
-import 'package:path_provider/path_provider.dart';
-import 'package:sqflite/sqflite.dart' as sqflite;
-import 'package:sqflite_common_ffi/sqflite_ffi.dart';
+// import 'package:flutter/foundation.dart';
+import 'package:sqflite/sqflite.dart';
 
+import '../../../../core/database/app_database.dart';
 import '../../../menu/data/models/meal_model.dart';
 import '../../presentation/view_model/cart_state.dart';
 
@@ -37,56 +35,32 @@ class SqliteCartLocalStorage implements CartLocalStorage {
     });
   }
 
-  Future<Database> _openDatabase() => _database ??= _createDatabase();
+  Future<Database> _openDatabase() {
+    return _database ??= openAppDatabase(
+      fileName: 'goodfood_cart.db',
+      path: _databasePath,
+      version: 1,
+      onCreate: (database, _) async {
+        await database.execute('''
+          CREATE TABLE cart_items (
+            mealId TEXT PRIMARY KEY,
+            quantity INTEGER NOT NULL,
+            name TEXT NOT NULL,
+            category TEXT NOT NULL,
+            price REAL NOT NULL,
+            imageUrl TEXT NOT NULL,
+            description TEXT NOT NULL,
+            isAvailable INTEGER NOT NULL
+          )
+        ''');
+      },
+    );
+  }
 
   Future<void> close() async {
     final database = _database;
     _database = null;
     if (database != null) await (await database).close();
-  }
-
-  Future<Database> _createDatabase() async {
-    if (!kIsWeb &&
-        (defaultTargetPlatform == TargetPlatform.windows ||
-            defaultTargetPlatform == TargetPlatform.linux ||
-            defaultTargetPlatform == TargetPlatform.macOS)) {
-      sqfliteFfiInit();
-      databaseFactory = databaseFactoryFfi;
-    } else if (!kIsWeb &&
-        (defaultTargetPlatform == TargetPlatform.android ||
-            defaultTargetPlatform == TargetPlatform.iOS)) {
-      databaseFactory = sqflite.databaseFactorySqflitePlugin;
-    } else {
-      throw UnsupportedError('SQLite cart storage is not supported here.');
-    }
-
-    final databasePath = _databasePath ?? await _defaultDatabasePath();
-    return databaseFactory.openDatabase(
-      databasePath,
-      options: OpenDatabaseOptions(
-        version: 1,
-        onCreate: (database, _) async {
-          await database.execute('''
-            CREATE TABLE cart_items (
-              mealId TEXT PRIMARY KEY,
-              quantity INTEGER NOT NULL,
-              name TEXT NOT NULL,
-              category TEXT NOT NULL,
-              price REAL NOT NULL,
-              imageUrl TEXT NOT NULL,
-              description TEXT NOT NULL,
-              isAvailable INTEGER NOT NULL
-            )
-          ''');
-        },
-      ),
-    );
-  }
-
-  Future<String> _defaultDatabasePath() async {
-    final directory = await getApplicationSupportDirectory();
-    await directory.create(recursive: true);
-    return p.join(directory.path, 'goodfood_cart.db');
   }
 
   Map<String, Object?> _cartItemToRow(CartItem item) => {

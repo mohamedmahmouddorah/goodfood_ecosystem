@@ -29,16 +29,17 @@ class MenuCubit extends Cubit<MenuState> {
   Future<void> _refreshFromLocalCache() async {
     final meals = await _repo.readAvailableMealsFromCache();
     if (meals == null || isClosed) return;
-    final mealsChanged = !_hasSnapshot || !_sameMeals(_allMeals, meals);
-    _hasSnapshot = true;
-    _allMeals = meals;
-    _index = MealSearchIndex(meals);
-    _emitVisible(isFromCache: state.isFromCache, newSnapshot: mealsChanged);
+    _updateState(meals, isFromCache: true);
   }
 
   Future<void> load({bool preserveCurrent = false}) async {
     await _subscription?.cancel();
-    if (!preserveCurrent) {
+
+    // 1. قراءة فورية سريعة جداً من SQLite
+    final cachedMeals = await _repo.readAvailableMealsFromCache();
+    if (cachedMeals != null && cachedMeals.isNotEmpty) {
+      _updateState(cachedMeals, isFromCache: true);
+    } else if (!preserveCurrent) {
       _hasSnapshot = false;
       emit(
         state.copyWith(
@@ -48,17 +49,11 @@ class MenuCubit extends Cubit<MenuState> {
         ),
       );
     }
+
+    // 2. الاستماع التفاعلي للـ Remote Stream من Firestore
     _subscription = _repo.watchAvailableMeals().listen(
       (snapshot) {
-        final mealsChanged =
-            !_hasSnapshot || !_sameMeals(_allMeals, snapshot.meals);
-        _hasSnapshot = true;
-        _allMeals = snapshot.meals;
-        _index = MealSearchIndex(snapshot.meals);
-        _emitVisible(
-          isFromCache: snapshot.isFromCache,
-          newSnapshot: mealsChanged,
-        );
+        _updateState(snapshot.meals, isFromCache: snapshot.isFromCache);
       },
       onError: (Object error, StackTrace _) {
         if (_hasSnapshot) return;
@@ -70,13 +65,19 @@ class MenuCubit extends Cubit<MenuState> {
     );
   }
 
+  void _updateState(List<MealModel> meals, {required bool isFromCache}) {
+    final mealsChanged = !_hasSnapshot || !_sameMeals(_allMeals, meals);
+    _hasSnapshot = true;
+    _allMeals = meals;
+    _index = MealSearchIndex(meals);
+    _emitVisible(isFromCache: isFromCache, newSnapshot: mealsChanged);
+  }
+
   void selectCategory(MealCategory? category) {
     if (category == state.category) return;
     _emitVisible(category: () => category);
   }
 
-  /// Local in-memory search: O(log n) per keystroke, short debounce only
-  /// to avoid rebuilding the grid for every single character.
   void search(String text) {
     _debounce?.cancel();
     _debounce = Timer(const Duration(milliseconds: 100), () {
