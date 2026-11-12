@@ -10,13 +10,13 @@ import 'meal_search_index.dart';
 import 'menu_state.dart';
 
 class MenuCubit extends Cubit<MenuState> {
-  MenuCubit(this._repo) : super(const MenuState()) {
-    _localChangeSubscription = _repo.localChanges.listen(
+  MenuCubit(this.repo) : super(const MenuState()) {
+    _localChangeSubscription = repo.localChanges.listen(
       (_) => _refreshFromLocalCache(),
     );
   }
 
-  final MenuRepository _repo;
+  final MenuRepository repo;
   Timer? _debounce;
   StreamSubscription<RemoteMealsSnapshot>? _subscription;
   late final StreamSubscription<void> _localChangeSubscription;
@@ -27,7 +27,7 @@ class MenuCubit extends Cubit<MenuState> {
   List<MealModel> get availableMeals => _allMeals;
 
   Future<void> _refreshFromLocalCache() async {
-    final meals = await _repo.readAvailableMealsFromCache();
+    final meals = await repo.readAvailableMealsFromCache();
     if (meals == null || isClosed) return;
     _updateState(meals, isFromCache: true);
   }
@@ -36,7 +36,7 @@ class MenuCubit extends Cubit<MenuState> {
     await _subscription?.cancel();
 
     // 1. قراءة فورية سريعة جداً من SQLite
-    final cachedMeals = await _repo.readAvailableMealsFromCache();
+    final cachedMeals = await repo.readAvailableMealsFromCache();
     if (cachedMeals != null && cachedMeals.isNotEmpty) {
       _updateState(cachedMeals, isFromCache: true);
     } else if (!preserveCurrent) {
@@ -50,8 +50,7 @@ class MenuCubit extends Cubit<MenuState> {
       );
     }
 
-    // 2. الاستماع التفاعلي للـ Remote Stream من Firestore
-    _subscription = _repo.watchAvailableMeals().listen(
+    _subscription = repo.watchAvailableMeals().listen(
       (snapshot) {
         _updateState(snapshot.meals, isFromCache: snapshot.isFromCache);
       },
@@ -64,7 +63,6 @@ class MenuCubit extends Cubit<MenuState> {
       },
     );
   }
-
   void _updateState(List<MealModel> meals, {required bool isFromCache}) {
     final mealsChanged = !_hasSnapshot || !_sameMeals(_allMeals, meals);
     _hasSnapshot = true;

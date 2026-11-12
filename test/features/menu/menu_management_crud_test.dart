@@ -354,7 +354,7 @@ void main() {
       imageUrl: '',
     );
     final service = _InMemoryMenuRemoteService()..seed([starter, main]);
-    final cubit = MenuCubit(MenuRepository(service));
+    final cubit = MenuCubit( MenuRepository(service));
     final initialMenu = cubit.stream.firstWhere(
       (state) => state.status == MenuStatus.success,
     );
