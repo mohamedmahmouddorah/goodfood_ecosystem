@@ -9,8 +9,8 @@ import 'package:goodfood_ecosystem/features/customer_order_management/presentati
 import 'package:goodfood_ecosystem/features/customer_order_management/presentation/view_model/cart_cubit.dart';
 import 'package:goodfood_ecosystem/features/customer_order_management/presentation/view_model/cart_state.dart';
 import 'package:goodfood_ecosystem/features/customer_order_management/presentation/view_model/customer_order_cubit.dart';
-import 'package:path/path.dart';
 
+import '../../../../core/widgets/app_bottom_navigation_bar.dart';
 import '../../data/models/meal_model.dart';
 import '../../data/repositories/menu_repository.dart';
 import '../view_model/menu_cubit.dart';
@@ -32,7 +32,7 @@ class MenuScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiBlocProvider(
       providers: [
-        BlocProvider(create: (_) => MenuCubit(repo: repository)..load()),
+        BlocProvider(create: (_) => MenuCubit(repository)..load()),
         BlocProvider(create: (_) => CartCubit(repo: repo)..loadCartData()),
       ],
       child: _MenuView(repository: repository),
@@ -53,8 +53,6 @@ class _MenuViewState extends State<_MenuView> {
   final _searchController = TextEditingController();
   final _cartNotificationMessage = ValueNotifier<String>('');
   Timer? _cartNotificationTimer;
-  ScaffoldFeatureController<SnackBar, SnackBarClosedReason>?
-  _cartNotificationController;
 
   @override
   void dispose() {
@@ -98,11 +96,11 @@ class _MenuViewState extends State<_MenuView> {
                 ],
               ),
               backgroundColor: AppColors.errorBackground,
-              behavior: .floating,
-              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-              margin: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+              behavior: SnackBarBehavior.floating,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadiusGeometry.circular(15),
+                borderRadius: BorderRadius.circular(15),
                 side: BorderSide(color: AppColors.errorBorder),
               ),
             ),
@@ -189,7 +187,7 @@ class _MenuViewState extends State<_MenuView> {
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 1100),
               child: _MenuHeader(
-                onCartTap: () => () {},
+                onCartTap: () {},
                 onAdminTap: () => _openAdmin(context),
               ),
             ),
@@ -380,7 +378,26 @@ class _MenuViewState extends State<_MenuView> {
             );
           },
         ),
-        bottomNavigationBar: const _MenuBottomNavigation(),
+        bottomNavigationBar: AppBottomNavigationBar(
+          items: const [
+            AppNavigationItem(label: 'Home', icon: Icons.home_outlined),
+            AppNavigationItem(
+              label: 'Orders',
+              icon: Icons.receipt_long_outlined,
+            ),
+            AppNavigationItem(
+              label: 'Menu',
+              icon: Icons.restaurant_menu_outlined,
+            ),
+            AppNavigationItem(label: 'Profile', icon: Icons.person_outline),
+          ],
+          selectedIndex: 2,
+          onDestinationSelected: (_) {},
+          backgroundColor: MenuPalette.bg,
+          indicatorColor: MenuPalette.surface,
+          selectedColor: MenuPalette.gold,
+          unselectedColor: MenuPalette.muted,
+        ),
       ),
     );
   }
@@ -422,9 +439,9 @@ class _MenuHeader extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, constraints) {
         if (constraints.maxWidth < 240) {
-          return Row(
+          return const Row(
             children: [
-              const Expanded(
+              Expanded(
                 child: Text(
                   'Menu',
                   maxLines: 1,
@@ -432,11 +449,11 @@ class _MenuHeader extends StatelessWidget {
                   style: TextStyle(color: Colors.white, fontSize: 16),
                 ),
               ),
-              _CartButton()
-              //_adminButton(),
+              _CartButton(),
             ],
           );
         }
+
         return Row(
           children: [
             Container(
@@ -479,154 +496,66 @@ class _MenuHeader extends StatelessWidget {
                 ],
               ),
             ),
-            _CartButton(),
-            //_adminButton(),
+            const _CartButton(),
           ],
         );
       },
     );
   }
-
- /** Widget _adminButton() => IconButton(
-    onPressed: onAdminTap,
-    tooltip: 'Admin menu',
-    visualDensity: VisualDensity.compact,
-    constraints: const BoxConstraints.tightFor(width: 36, height: 40),
-    padding: EdgeInsets.zero,
-    icon: const Icon(
-      Icons.admin_panel_settings_outlined,
-      color: MenuPalette.gold,
-    ),
-  ); */
-  
 }
+
 class _CartButton extends StatelessWidget {
-  const _CartButton({super.key});
+  const _CartButton();
 
   @override
   Widget build(BuildContext context) {
     return Stack(
-    children: [
-      IconButton(
-        onPressed: (){
-          print(context.read<CartCubit>());
-print(context.read<CustomerOrderCubit>());
-         Navigator.push(
-  context,
-  MaterialPageRoute(
-    builder: (_) => MultiBlocProvider(
-      providers: [
-        BlocProvider.value(
-          value: context.read<CartCubit>(),
-        ),
-        BlocProvider.value(
-          value: context.read<CustomerOrderCubit>(),
-        ),
-      ],
-      child: CartView(
-        repository: context.read<MenuCubit>().repo,
-      ),
-    ),
-  ),
-);
-        },//onCartTap,
-        tooltip: 'Cart',
-        visualDensity: VisualDensity.compact,
-        constraints: const BoxConstraints.tightFor(width: 36, height: 40),
-        padding: EdgeInsets.zero,
-        icon: const Icon(Icons.shopping_cart_outlined, color: MenuPalette.gold),
-      ),
-      Positioned(
-        right: 0,
-        bottom: 0,
-        child: BlocBuilder<CartCubit, CartState>(
-          builder: (context, state) {
-            final numOfItems = state.cartItems.fold<int>(
-      0,
-      (sum, item) => sum + item.quantity,
-    );
-
-    return Text(
-      '$numOfItems',
-      style: AppFonts.smallGoldTiltle,
-    );
-          },
-        ),
-      ),
-    ],
-  );
-  }
-}
-
-class _MenuBottomNavigation extends StatelessWidget {
-  const _MenuBottomNavigation();
-
-  static const _items = [
-    (icon: Icons.home_outlined, label: 'Home'),
-    (icon: Icons.receipt_long_outlined, label: 'Orders'),
-    (icon: Icons.restaurant_menu_outlined, label: 'Menu'),
-    (icon: Icons.person_outline, label: 'Profile'),
-  ];
-
-  @override
-  Widget build(BuildContext context) {
-    return SafeArea(
-      top: false,
-      child: Container(
-        height: 62,
-        decoration: const BoxDecoration(
-          color: MenuPalette.bg,
-          border: Border(top: BorderSide(color: MenuPalette.border)),
-        ),
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            final showLabels = constraints.maxWidth >= 360;
-            return Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 1100),
-                child: Row(
-                  children: [
-                    for (var index = 0; index < _items.length; index++)
-                      Expanded(
-                        child: Semantics(
-                          button: true,
-                          selected: index == 2,
-                          label: _items[index].label,
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                _items[index].icon,
-                                size: 20,
-                                color: index == 2
-                                    ? MenuPalette.gold
-                                    : MenuPalette.muted,
-                              ),
-                              if (showLabels) ...[
-                                const SizedBox(height: 3),
-                                Text(
-                                  _items[index].label,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(
-                                    color: index == 2
-                                        ? MenuPalette.gold
-                                        : MenuPalette.muted,
-                                    fontSize: 10,
-                                  ),
-                                ),
-                              ],
-                            ],
-                          ),
-                        ),
-                      ),
+      children: [
+        IconButton(
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => MultiBlocProvider(
+                  providers: [
+                    BlocProvider.value(
+                      value: context.read<CartCubit>(),
+                    ),
+                    BlocProvider.value(
+                      value: context.read<CustomerOrderCubit>(),
+                    ),
                   ],
+                  child: CartView(
+                    repository: context.read<MenuCubit>().repo,
+                  ),
                 ),
               ),
             );
           },
+          tooltip: 'Cart',
+          visualDensity: VisualDensity.compact,
+          constraints: const BoxConstraints.tightFor(width: 36, height: 40),
+          padding: EdgeInsets.zero,
+          icon: const Icon(Icons.shopping_cart_outlined, color: MenuPalette.gold),
         ),
-      ),
+        Positioned(
+          right: 0,
+          bottom: 0,
+          child: BlocBuilder<CartCubit, CartState>(
+            builder: (context, state) {
+              final numOfItems = state.cartItems.fold<int>(
+                0,
+                (sum, item) => sum + item.quantity,
+              );
+
+              return Text(
+                '$numOfItems',
+                style: AppFonts.smallGoldTiltle,
+              );
+            },
+          ),
+        ),
+      ],
     );
   }
 }

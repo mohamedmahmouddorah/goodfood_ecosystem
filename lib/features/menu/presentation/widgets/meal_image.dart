@@ -1,24 +1,27 @@
+import 'dart:io';
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
 import 'menu_palette.dart';
 
-/// One image widget for the whole feature.
-/// `cacheWidth` decodes the picture at a small size, which is the biggest
-/// memory saver in a grid of photos.
 class MealImage extends StatelessWidget {
   const MealImage({
     super.key,
     required this.url,
+    this.localPath,
     this.width,
     this.height,
-    this.cacheWidth = 400,
+    this.cacheWidth = 300,
+    this.cacheHeight,
   });
 
   final String url;
+  final String? localPath;
   final double? width;
   final double? height;
   final int cacheWidth;
+  final int? cacheHeight;
 
   static const _placeholder = ColoredBox(color: MenuPalette.surface);
   static const _error = ColoredBox(
@@ -28,14 +31,29 @@ class MealImage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final localPathStr = localPath;
+    if (localPathStr != null && localPathStr.isNotEmpty) {
+      return Image.file(
+        File(localPathStr),
+        width: width,
+        height: height,
+        fit: BoxFit.cover,
+        cacheWidth: cacheWidth,
+        cacheHeight: cacheHeight ?? cacheWidth,
+        errorBuilder: (_, _, _) => _error,
+      );
+    }
+
     if (url.isEmpty) return _error;
+
     return CachedNetworkImage(
       imageUrl: url,
       width: width,
       height: height,
       fit: BoxFit.cover,
       memCacheWidth: cacheWidth,
-      fadeInDuration: const Duration(milliseconds: 150),
+      memCacheHeight: cacheHeight ?? cacheWidth,
+      fadeInDuration: const Duration(milliseconds: 100),
       placeholder: (_, _) => _placeholder,
       errorWidget: (_, _, _) => _error,
     );

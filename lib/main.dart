@@ -1,6 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:goodfood_ecosystem/features/admin/presentation/view/admin_view.dart';
 import 'package:goodfood_ecosystem/features/auth/presentation/view/login_view.dart';
@@ -19,8 +22,8 @@ import 'package:goodfood_ecosystem/features/customer_order_management/presentati
 import 'package:goodfood_ecosystem/features/customer_order_management/presentation/view_model/customer_order_cubit.dart';
 import 'package:goodfood_ecosystem/features/customer_order_management/presentation/widgets/cart_item.dart';
 import 'package:goodfood_ecosystem/features/menu/presentation/view_model/menu_cubit.dart';
-import 'package:hive/hive.dart';
 import 'package:hive_flutter/adapters.dart';
+
 
 import 'features/menu/data/repositories/menu_repository.dart';
 import 'features/menu/data/services/meal_local_cache.dart';
@@ -28,8 +31,23 @@ import 'features/menu/data/services/menu_remote_service.dart';
 import 'features/menu/presentation/view/menu_screen.dart';
 import 'firebase_options.dart';
 
-Future<void> main() async {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+
+  try {
+    await dotenv.load(fileName: ".env");
+  } catch (e) {
+    debugPrint('.env file not found or empty: $e');
+  }
+
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+
+  FirebaseFirestore.instance.settings = const Settings(
+    persistenceEnabled: false, );
+
   await Hive.initFlutter();
   Hive.registerAdapter(OrderItemModelAdapter());
   Box<OrderItemModel> cartBox = await Hive.openBox<OrderItemModel>('cartBox');
@@ -38,11 +56,17 @@ Future<void> main() async {
     persistenceEnabled: true,
   );
 
-  // Built once, not inside build().
   final repository = MenuRepository(
     MenuRemoteService(FirebaseFirestore.instance),
     mealLocalCache: SqliteMealLocalCache(),
   );
+
+
+  
+  repository.startSync();
+
+
+
   final cartRepositry = CartRepo(cartBox: cartBox);
   runApp(
     BlocProvider(
@@ -79,7 +103,7 @@ class MyApp extends StatelessWidget {
         '/customer_details': (context) => MultiBlocProvider(
           providers: [
             BlocProvider(create: (context) => CustomerOrderCubit()),
-            BlocProvider(create: (context) => MenuCubit(repo: repository)),
+            BlocProvider(create: (context) => MenuCubit(repository)),
             BlocProvider(create: (context) => CartCubit(repo: cartRepo)),
           ],
           child: CustomerDetailsView(),

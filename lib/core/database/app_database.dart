@@ -11,13 +11,19 @@ bool _factoryReady = false;
 Future<Database> openAppDatabase({
   required String fileName,
   required OnDatabaseCreateFn onCreate,
+  int version = 1,
+  OnDatabaseVersionChangeFn? onUpgrade,
   String? path,
 }) async {
   _initFactory();
   final databasePath = path ?? await _defaultPath(fileName);
   return databaseFactory.openDatabase(
     databasePath,
-    options: OpenDatabaseOptions(version: 1, onCreate: onCreate),
+    options: OpenDatabaseOptions(
+      version: version,
+      onCreate: onCreate,
+      onUpgrade: onUpgrade,
+    ),
   );
 }
 
