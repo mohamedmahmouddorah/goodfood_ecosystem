@@ -62,21 +62,20 @@ class _MenuManagementView extends StatelessWidget {
             appBar: AppBar(
               backgroundColor: MenuPalette.bg,
               foregroundColor: Colors.white,
-              title: AppText(
+              title: Text(
                 veryNarrow ? 'Products' : 'Customer Menu Products',
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
               actions: [
-                const LanguageToggle(),
                 if (!compact)
                   Padding(
-                    padding: const EdgeInsetsDirectional.only(end: 12),
+                    padding: const EdgeInsets.only(right: 12),
                     child: _addProductButton(context),
                   )
                 else if (veryNarrow)
                   IconButton(
-                    tooltip: context.tr('Add product'),
+                    tooltip: 'Add product',
                     onPressed: () => _openEditor(context),
                     icon: const Icon(Icons.add),
                   ),
@@ -126,9 +125,9 @@ class _MenuManagementView extends StatelessWidget {
                           onChanged: context.read<MenuManagementCubit>().search,
                           style: const TextStyle(color: Colors.white),
                           decoration: InputDecoration(
-                            hintText: context.tr(
-                              veryNarrow ? 'Search...' : 'Search products...',
-                            ),
+                            hintText: veryNarrow
+                                ? 'Search...'
+                                : 'Search products...',
                             hintStyle: const TextStyle(
                               color: MenuPalette.muted,
                             ),
@@ -199,9 +198,7 @@ class _MenuManagementView extends StatelessWidget {
                                       state.category != null
                                   ? 'No products match these filters.'
                                   : 'No products yet. Connect to Firebase to refresh, or add a product below.',
-                              actionLabel: state.meals.isEmpty
-                                  ? 'Refresh'
-                                  : null,
+                              actionLabel: state.meals.isEmpty ? 'Refresh' : null,
                               onAction: state.meals.isEmpty
                                   ? context.read<MenuManagementCubit>().watch
                                   : null,
@@ -221,8 +218,10 @@ class _MenuManagementView extends StatelessWidget {
                                   itemCount: state.visible.length,
                                   separatorBuilder: (_, _) =>
                                       const SizedBox(height: 8),
-                                  itemBuilder: (context, index) =>
-                                      _mealTile(context, state.visible[index]),
+                                  itemBuilder: (context, index) => _mealTile(
+                                    context,
+                                    state.visible[index],
+                                  ),
                                 ),
                               ),
                             ),
@@ -243,7 +242,7 @@ class _MenuManagementView extends StatelessWidget {
     foregroundColor: Colors.black,
     backgroundColor: MenuPalette.gold,
     minimumHeight: 44,
-    child: const AppText(
+    child: const Text(
       'Add product',
       style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
     ),
@@ -323,7 +322,7 @@ class _VisibilityFilters extends StatelessWidget {
       for (final (filter, label) in filters)
         ChoiceChip(
           key: ValueKey('visibility-filter-${filter.name}'),
-          label: AppText(label),
+          label: Text(label),
           selected: selected == filter,
           onSelected: (_) => onSelected(filter),
           showCheckmark: false,

@@ -1,9 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'core/localization/app_locale_cubit.dart';
-import 'core/localization/goodfood_localizations.dart';
-import 'core/firebase/firebase_environment.dart';
 
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
@@ -28,6 +23,7 @@ import 'package:goodfood_ecosystem/features/customer_order_management/presentati
 import 'package:goodfood_ecosystem/features/menu/presentation/view_model/menu_cubit.dart';
 import 'package:hive_flutter/adapters.dart';
 
+
 import 'features/menu/data/repositories/menu_repository.dart';
 import 'features/menu/data/services/menu_cache_factory.dart';
 import 'features/menu/data/services/menu_remote_service.dart';
@@ -39,13 +35,19 @@ import 'features/orders/data/services/customer_order_tracking.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+
   try {
     await dotenv.load(fileName: ".env");
   } catch (e) {
     debugPrint('.env file not found or empty: $e');
   }
 
-  await FirebaseEnvironment.initialize();
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+
+  FirebaseFirestore.instance.settings = const Settings(
+    persistenceEnabled: false, );
 
   await Hive.initFlutter();
   Hive.registerAdapter(OrderItemModelAdapter());
@@ -60,7 +62,11 @@ void main() async {
         : createMenuLocalCache(),
   );
 
+
+  
   repository.startSync();
+
+
 
   final cartRepositry = CartRepo(cartBox: cartBox);
   final localeCubit = AppLocaleCubit(await SharedPreferences.getInstance());

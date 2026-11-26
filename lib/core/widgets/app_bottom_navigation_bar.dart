@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../localization/goodfood_localizations.dart';
 
 class AppNavigationItem {
   const AppNavigationItem({
@@ -55,7 +54,7 @@ class AppBottomNavigationBar extends StatelessWidget {
           ),
           child: LayoutBuilder(
             builder: (context, constraints) {
-              final showLabels = constraints.maxWidth >= 320;
+              final showLabels = constraints.maxWidth >= 360;
               return Center(
                 child: ConstrainedBox(
                   constraints: BoxConstraints(maxWidth: maxWidth),
@@ -64,18 +63,6 @@ class AppBottomNavigationBar extends StatelessWidget {
                     selectedIndex: selectedIndex,
                     backgroundColor: backgroundColor,
                     indicatorColor: indicatorColor,
-                    labelTextStyle: WidgetStateProperty.resolveWith(
-                      (states) => TextStyle(
-                        fontSize: 11,
-                        height: 1.2,
-                        fontWeight: states.contains(WidgetState.selected)
-                            ? FontWeight.w600
-                            : FontWeight.w400,
-                        color: states.contains(WidgetState.selected)
-                            ? selectedColor
-                            : unselectedColor,
-                      ),
-                    ),
                     labelBehavior: showLabels
                         ? NavigationDestinationLabelBehavior.alwaysShow
                         : NavigationDestinationLabelBehavior.onlyShowSelected,
@@ -92,8 +79,8 @@ class AppBottomNavigationBar extends StatelessWidget {
                             color: selectedColor,
                             size: 20,
                           ),
-                          label: context.tr(item.label),
-                          tooltip: context.tr(item.label),
+                          label: item.label,
+                          tooltip: item.label,
                         ),
                     ],
                     onDestinationSelected: (index) {

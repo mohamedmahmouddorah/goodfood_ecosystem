@@ -24,74 +24,30 @@ class MealCard extends StatelessWidget {
         color: MenuPalette.surface,
         clipBehavior: Clip.antiAlias,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(18),
+          borderRadius: BorderRadius.circular(14),
           side: const BorderSide(color: MenuPalette.border),
         ),
         child: InkWell(
           onTap: onTap,
           child: Padding(
-            padding: const EdgeInsets.all(10),
+            padding: const EdgeInsets.all(8),
             child: LayoutBuilder(
               builder: (context, constraints) {
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Expanded(
-                      child: Stack(
-                        fit: StackFit.expand,
-                        children: [
-                          Hero(
-                            tag: 'meal_${meal.id}',
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(10),
-                              child: MealImage(
-                                url: meal.imageUrl,
-                                localPath: meal.localImagePath,
-                                width: double.infinity,
-                                cacheWidth: 350,
-                              ),
-                            ),
+                      child: Hero(
+                        tag: 'meal_${meal.id}',
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(10),
+                          child: MealImage(
+                            url: meal.imageUrl,
+                            localPath: meal.localImagePath,
+                            width: double.infinity,
+                            cacheWidth: 350,
                           ),
-                          if (constraints.maxWidth >= 120)
-                            PositionedDirectional(
-                              top: 6,
-                              end: 6,
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 7,
-                                  vertical: 4,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: MenuPalette.surface.withValues(
-                                    alpha: .94,
-                                  ),
-                                  borderRadius: BorderRadius.circular(20),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(
-                                      Icons.circle,
-                                      size: 6,
-                                      color: meal.isAvailable
-                                          ? MenuPalette.success
-                                          : MenuPalette.muted,
-                                    ),
-                                    const SizedBox(width: 4),
-                                    AppText(
-                                      meal.isAvailable
-                                          ? 'Available'
-                                          : 'Unavailable',
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 9,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                        ],
+                        ),
                       ),
                     ),
                     const SizedBox(height: 7),
@@ -102,34 +58,20 @@ class MealCard extends StatelessWidget {
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 15,
-                        fontWeight: FontWeight.w600,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
                     const SizedBox(height: 4),
-                    if (meal.description.isNotEmpty &&
-                        constraints.maxWidth >= 120) ...[
-                      Text(
-                        meal.description,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: MenuPalette.muted,
-                          fontSize: 12,
-                          height: 1.35,
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                    ],
                     Row(
                       children: [
                         Expanded(
                           child: FittedBox(
-                            alignment: AlignmentDirectional.centerStart,
+                            alignment: Alignment.centerLeft,
                             fit: BoxFit.scaleDown,
-                            child: AppText(
+                            child: Text(
                               '\$${meal.price.toStringAsFixed(2)}',
                               style: const TextStyle(
-                                color: MenuPalette.gold,
+                                color: Colors.white,
                                 fontSize: 14,
                               ),
                             ),
@@ -139,19 +81,17 @@ class MealCard extends StatelessWidget {
                         Material(
                           color: Colors.transparent,
                           child: InkWell(
-                            onTap: meal.isAvailable ? onAdd : null,
+                            onTap: onAdd,
                             customBorder: const CircleBorder(),
                             child: Ink(
                               width: constraints.maxWidth < 120 ? 26 : 30,
                               height: constraints.maxWidth < 120 ? 26 : 30,
-                              decoration: BoxDecoration(
+                              decoration: const BoxDecoration(
                                 shape: BoxShape.circle,
-                                color: meal.isAvailable
-                                    ? MenuPalette.gold
-                                    : MenuPalette.border,
+                                gradient: MenuPalette.goldGradient,
                               ),
                               child: Icon(
-                                meal.isAvailable ? Icons.add : Icons.remove,
+                                Icons.add,
                                 color: Colors.black,
                                 size: constraints.maxWidth < 120 ? 17 : 20,
                               ),
