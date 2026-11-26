@@ -1,3 +1,5 @@
+import 'package:goodfood_ecosystem/core/widgets/language_toggle.dart';
+import 'package:goodfood_ecosystem/core/localization/goodfood_localizations.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -50,6 +52,7 @@ class _CheckoutViewState extends State<CheckoutView> {
         cartCubit.total,
         cartCubit.tax,
       );
+      if (orderCubit.state is! PlaceOrderSuccessState) return;
     }
 
     await orderCubit.updatePayment(_selectedPaymentMethod);
@@ -63,8 +66,8 @@ class _CheckoutViewState extends State<CheckoutView> {
     final tableNo = orderCubit.tableNo ?? orderCubit.order?.tableNo ?? 5;
     final clientName = orderCubit.name ?? orderCubit.order?.clientName;
 
-    final List<OrderItemModel> items = (orderCubit.order?.meals != null &&
-            orderCubit.order!.meals.isNotEmpty)
+    final List<OrderItemModel> items =
+        (orderCubit.order?.meals != null && orderCubit.order!.meals.isNotEmpty)
         ? orderCubit.order!.meals
         : cartCubit.cartItems;
 
@@ -108,7 +111,7 @@ class _CheckoutViewState extends State<CheckoutView> {
                   ),
                   const SizedBox(width: 12),
                   Expanded(
-                    child: Text(
+                    child: AppText(
                       state.msg,
                       style: AppFonts.mainTitle.copyWith(fontSize: 14),
                     ),
@@ -161,14 +164,14 @@ class _CheckoutViewState extends State<CheckoutView> {
                 fit: BoxFit.scaleDown,
                 child: Column(
                   children: [
-                    Text(
+                    AppText(
                       "Checkout",
                       style: AppFonts.boldSubTitleWhite18.copyWith(
                         fontSize: isSmall ? 16 : 18,
                       ),
                     ),
                     const SizedBox(height: 2),
-                    Text(
+                    AppText(
                       "GOODFOOD DINING",
                       style: AppFonts.smallGoldTiltle.copyWith(
                         fontSize: isSmall ? 8 : 10,
@@ -180,8 +183,11 @@ class _CheckoutViewState extends State<CheckoutView> {
                 ),
               ),
               actions: [
+                const LanguageToggle(),
                 Padding(
-                  padding: EdgeInsets.only(right: isSmall ? 8.0 : 16.0),
+                  padding: EdgeInsetsDirectional.only(
+                    end: isSmall ? 8.0 : 16.0,
+                  ),
                   child: Center(
                     child: Container(
                       padding: EdgeInsets.symmetric(
@@ -207,7 +213,7 @@ class _CheckoutViewState extends State<CheckoutView> {
                             ),
                           ),
                           const SizedBox(width: 6),
-                          Text(
+                          AppText(
                             "Table $tableNo",
                             style: TextStyle(
                               color: AppColors.goldLight,
@@ -222,143 +228,141 @@ class _CheckoutViewState extends State<CheckoutView> {
                 ),
               ],
             ),
-            body:  Center(
-  child: ConstrainedBox(
-    constraints: BoxConstraints(
-      maxWidth: isWide ? 1050 : 580,
-    ),
-    child: SizedBox(
-      width: double.infinity,
-      child: SingleChildScrollView(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: horizontalPadding,
-                    vertical: 12.0,
-                  ),
-                  child: isWide
-                      ? Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            // Left Column: Customer Details + Order Summary
-                            Expanded(
-                              flex: 6,
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  _buildCustomerDetailsCard(clientName, isSmall),
-                                  const SizedBox(height: 16),
-                                  _buildOrderSummaryCard(
-                                    items,
-                                    subtotal,
-                                    serviceCharge,
-                                    total,
-                                    isSmall,
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(width: 24),
-                            // Right Column: Payment Method + Payment Button
-                            Expanded(
-                              flex: 5,
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    "Payment Method",
-                                    style: AppFonts.boldSubTitleWhite18.copyWith(
-                                      fontSize: 16,
+            body: Center(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(maxWidth: isWide ? 1050 : 580),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: SingleChildScrollView(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: horizontalPadding,
+                      vertical: 12.0,
+                    ),
+                    child: isWide
+                        ? Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // Left Column: Customer Details + Order Summary
+                              Expanded(
+                                flex: 6,
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    _buildCustomerDetailsCard(
+                                      clientName,
+                                      isSmall,
                                     ),
-                                  ),
-                                  const SizedBox(height: 12),
-                                  _buildPaymentOption(
-                                    method: PaymentMethod.cash,
-                                    icon: Icons.payments_outlined,
-                                    title: "Cash at Counter",
-                                    subtitle:
-                                        "Pay physically with cash or invoice",
-                                    isSmall: isSmall,
-                                  ),
-                                  const SizedBox(height: 10),
-                                  _buildPaymentOption(
-                                    method: PaymentMethod.card,
-                                    icon: Icons.credit_card_outlined,
-                                    title: "Card Payment",
-                                    subtitle:
-                                        "Credit or debit terminal at table",
-                                    isSmall: isSmall,
-                                  ),
-                                  const SizedBox(height: 10),
-                                  _buildPaymentOption(
-                                    method: PaymentMethod.mobileWallet,
-                                    icon: Icons.phone_iphone_outlined,
-                                    title: "Mobile Wallet",
-                                    subtitle:
-                                        "Instant contactless checkout",
-                                    badgeText: "APPLE PAY",
-                                    isSmall: isSmall,
-                                  ),
-                                  const SizedBox(height: 24),
-                                  _buildPayButton(context),
-                                ],
+                                    const SizedBox(height: 16),
+                                    _buildOrderSummaryCard(
+                                      items,
+                                      subtotal,
+                                      serviceCharge,
+                                      total,
+                                      isSmall,
+                                    ),
+                                  ],
+                                ),
                               ),
-                            ),
-                          ],
-                        )
-                      : Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            _buildCustomerDetailsCard(clientName, isSmall),
-                            const SizedBox(height: 16),
-                            _buildOrderSummaryCard(
-                              items,
-                              subtotal,
-                              serviceCharge,
-                              total,
-                              isSmall,
-                            ),
-                            const SizedBox(height: 20),
-                            Text(
-                              "Payment Method",
-                              style: AppFonts.boldSubTitleWhite18.copyWith(
-                                fontSize: 16,
+                              const SizedBox(width: 24),
+                              // Right Column: Payment Method + Payment Button
+                              Expanded(
+                                flex: 5,
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    AppText(
+                                      "Payment Method",
+                                      style: AppFonts.boldSubTitleWhite18
+                                          .copyWith(fontSize: 16),
+                                    ),
+                                    const SizedBox(height: 12),
+                                    _buildPaymentOption(
+                                      method: PaymentMethod.cash,
+                                      icon: Icons.payments_outlined,
+                                      title: "Cash at Counter",
+                                      subtitle:
+                                          "Pay physically with cash or invoice",
+                                      isSmall: isSmall,
+                                    ),
+                                    const SizedBox(height: 10),
+                                    _buildPaymentOption(
+                                      method: PaymentMethod.card,
+                                      icon: Icons.credit_card_outlined,
+                                      title: "Card Payment",
+                                      subtitle:
+                                          "Credit or debit terminal at table",
+                                      isSmall: isSmall,
+                                    ),
+                                    const SizedBox(height: 10),
+                                    _buildPaymentOption(
+                                      method: PaymentMethod.mobileWallet,
+                                      icon: Icons.phone_iphone_outlined,
+                                      title: "Mobile Wallet",
+                                      subtitle: "Instant contactless checkout",
+                                      badgeText: "APPLE PAY",
+                                      isSmall: isSmall,
+                                    ),
+                                    const SizedBox(height: 24),
+                                    _buildPayButton(context),
+                                  ],
+                                ),
                               ),
-                            ),
-                            const SizedBox(height: 12),
-                            _buildPaymentOption(
-                              method: PaymentMethod.cash,
-                              icon: Icons.payments_outlined,
-                              title: "Cash at Counter",
-                              subtitle: "Pay physically with cash or invoice",
-                              isSmall: isSmall,
-                            ),
-                            const SizedBox(height: 10),
-                            _buildPaymentOption(
-                              method: PaymentMethod.card,
-                              icon: Icons.credit_card_outlined,
-                              title: "Card Payment",
-                              subtitle: "Credit or debit terminal at table",
-                              isSmall: isSmall,
-                            ),
-                            const SizedBox(height: 10),
-                            _buildPaymentOption(
-                              method: PaymentMethod.mobileWallet,
-                              icon: Icons.phone_iphone_outlined,
-                              title: "Mobile Wallet",
-                              subtitle: "Instant contactless checkout",
-                              badgeText: "APPLE PAY",
-                              isSmall: isSmall,
-                            ),
-                            //const SizedBox(height: 24),
-                                        const SizedBox(height: 24),
-_buildPayButton(context),
-const SizedBox(height: 16),
-                          ],
-                        ),
+                            ],
+                          )
+                        : Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              _buildCustomerDetailsCard(clientName, isSmall),
+                              const SizedBox(height: 16),
+                              _buildOrderSummaryCard(
+                                items,
+                                subtotal,
+                                serviceCharge,
+                                total,
+                                isSmall,
+                              ),
+                              const SizedBox(height: 20),
+                              AppText(
+                                "Payment Method",
+                                style: AppFonts.boldSubTitleWhite18.copyWith(
+                                  fontSize: 16,
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                              _buildPaymentOption(
+                                method: PaymentMethod.cash,
+                                icon: Icons.payments_outlined,
+                                title: "Cash at Counter",
+                                subtitle: "Pay physically with cash or invoice",
+                                isSmall: isSmall,
+                              ),
+                              const SizedBox(height: 10),
+                              _buildPaymentOption(
+                                method: PaymentMethod.card,
+                                icon: Icons.credit_card_outlined,
+                                title: "Card Payment",
+                                subtitle: "Credit or debit terminal at table",
+                                isSmall: isSmall,
+                              ),
+                              const SizedBox(height: 10),
+                              _buildPaymentOption(
+                                method: PaymentMethod.mobileWallet,
+                                icon: Icons.phone_iphone_outlined,
+                                title: "Mobile Wallet",
+                                subtitle: "Instant contactless checkout",
+                                badgeText: "APPLE PAY",
+                                isSmall: isSmall,
+                              ),
+                              //const SizedBox(height: 24),
+                              const SizedBox(height: 24),
+                              _buildPayButton(context),
+                              const SizedBox(height: 16),
+                            ],
+                          ),
+                  ),
                 ),
               ),
             ),
-            ),
-
           );
         },
       ),
@@ -368,14 +372,14 @@ const SizedBox(height: 16),
   Widget _buildPayButton(BuildContext context) {
     return BlocBuilder<CustomerOrderCubit, CustomerOrderState>(
       builder: (context, state) {
-        final isLoading = state is UpdatePaymentLoadingState ||
+        final isLoading =
+            state is UpdatePaymentLoadingState ||
             state is PlaceOrderLoadingState;
         return ElevatedButton(
           onPressed: isLoading ? null : () => _onContinueToPayment(context),
           style: ElevatedButton.styleFrom(
             backgroundColor: AppColors.goldDark,
-            disabledBackgroundColor:
-                AppColors.goldDark.withValues(alpha: 0.6),
+            disabledBackgroundColor: AppColors.goldDark.withValues(alpha: 0.6),
             minimumSize: const Size(double.infinity, 54),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(16),
@@ -395,7 +399,7 @@ const SizedBox(height: 16),
               : Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: const [
-                    Text(
+                    AppText(
                       "Continue to Payment",
                       style: TextStyle(
                         color: Colors.black,
@@ -404,11 +408,7 @@ const SizedBox(height: 16),
                       ),
                     ),
                     SizedBox(width: 8),
-                    Icon(
-                      Icons.arrow_forward,
-                      color: Colors.black,
-                      size: 20,
-                    ),
+                    Icon(Icons.arrow_forward, color: Colors.black, size: 20),
                   ],
                 ),
         );
@@ -443,7 +443,7 @@ const SizedBox(height: 16),
               ),
               const SizedBox(width: 10),
               Expanded(
-                child: Text(
+                child: AppText(
                   "Customer Details",
                   style: AppFonts.boldSubTitleWhite18.copyWith(
                     fontSize: isSmall ? 14 : 16,
@@ -452,12 +452,15 @@ const SizedBox(height: 16),
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
                 decoration: BoxDecoration(
                   color: const Color(0xFF1E293B),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: const Text(
+                child: const AppText(
                   "Dine-In",
                   style: TextStyle(
                     color: Color(0xFF94A3B8),
@@ -482,14 +485,14 @@ const SizedBox(height: 16),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
+                    AppText(
                       "Number of Guests",
                       style: AppFonts.boldSubTitleWhite18.copyWith(
                         fontSize: isSmall ? 13 : 14,
                       ),
                     ),
                     const SizedBox(height: 2),
-                    Text(
+                    AppText(
                       "Standard table arrangement",
                       style: TextStyle(
                         color: const Color(0xFF64748B),
@@ -514,15 +517,18 @@ const SizedBox(height: 16),
                       onTap: () {
                         if (_guestsCount > 1) {
                           setState(() => _guestsCount--);
-                          context
-                              .read<CustomerOrderCubit>()
-                              .updateGuests(_guestsCount);
+                          context.read<CustomerOrderCubit>().updateGuests(
+                            _guestsCount,
+                          );
                         }
                       },
                       borderRadius: BorderRadius.circular(8),
                       child: const Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-                        child: Text(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 4,
+                        ),
+                        child: AppText(
                           "-",
                           style: TextStyle(
                             color: Color(0xFF94A3B8),
@@ -534,7 +540,7 @@ const SizedBox(height: 16),
                     ),
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 8),
-                      child: Text(
+                      child: AppText(
                         "$_guestsCount",
                         style: const TextStyle(
                           color: Colors.white,
@@ -546,14 +552,17 @@ const SizedBox(height: 16),
                     InkWell(
                       onTap: () {
                         setState(() => _guestsCount++);
-                        context
-                            .read<CustomerOrderCubit>()
-                            .updateGuests(_guestsCount);
+                        context.read<CustomerOrderCubit>().updateGuests(
+                          _guestsCount,
+                        );
                       },
                       borderRadius: BorderRadius.circular(8),
                       child: const Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-                        child: Text(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 4,
+                        ),
+                        child: AppText(
                           "+",
                           style: TextStyle(
                             color: Color(0xFF94A3B8),
@@ -582,7 +591,7 @@ const SizedBox(height: 16),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
+                    AppText(
                       clientName != null && clientName.isNotEmpty
                           ? clientName
                           : "Your Name (Optional)",
@@ -592,7 +601,7 @@ const SizedBox(height: 16),
                       overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: 2),
-                    Text(
+                    AppText(
                       "Display on waiter terminal",
                       style: TextStyle(
                         color: const Color(0xFF64748B),
@@ -639,7 +648,7 @@ const SizedBox(height: 16),
         children: [
           Row(
             children: [
-              Text(
+              AppText(
                 "Order Summary",
                 style: AppFonts.boldSubTitleWhite18.copyWith(
                   fontSize: isSmall ? 14 : 16,
@@ -655,7 +664,7 @@ const SizedBox(height: 16),
                     color: AppColors.goldLight.withValues(alpha: 0.3),
                   ),
                 ),
-                child: Text(
+                child: AppText(
                   "${items.length} items",
                   style: const TextStyle(
                     color: AppColors.goldLight,
@@ -671,7 +680,7 @@ const SizedBox(height: 16),
             const Padding(
               padding: EdgeInsets.symmetric(vertical: 12),
               child: Center(
-                child: Text(
+                child: AppText(
                   "No items in order",
                   style: TextStyle(color: Color(0xFF64748B)),
                 ),
@@ -719,15 +728,17 @@ const SizedBox(height: 16),
                               vertical: 1,
                             ),
                             decoration: BoxDecoration(
-                              color:
-                                  const Color(0xFF0F1722).withValues(alpha: 0.9),
+                              color: const Color(
+                                0xFF0F1722,
+                              ).withValues(alpha: 0.9),
                               borderRadius: BorderRadius.circular(4),
                               border: Border.all(
-                                color:
-                                    AppColors.goldLight.withValues(alpha: 0.6),
+                                color: AppColors.goldLight.withValues(
+                                  alpha: 0.6,
+                                ),
                               ),
                             ),
-                            child: Text(
+                            child: AppText(
                               "${item.quantity}x",
                               style: const TextStyle(
                                 color: AppColors.goldLight,
@@ -755,7 +766,7 @@ const SizedBox(height: 16),
                             overflow: TextOverflow.ellipsis,
                           ),
                           const SizedBox(height: 2),
-                          const Text(
+                          const AppText(
                             "Freshly prepared",
                             style: TextStyle(
                               color: Color(0xFF64748B),
@@ -767,7 +778,7 @@ const SizedBox(height: 16),
                         ],
                       ),
                     ),
-                    Text(
+                    AppText(
                       "\$${(item.unitPrice * item.quantity).toStringAsFixed(2)}",
                       style: TextStyle(
                         color: Colors.white,
@@ -784,11 +795,11 @@ const SizedBox(height: 16),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
+              const AppText(
                 "Subtotal",
                 style: TextStyle(color: Color(0xFF94A3B8), fontSize: 13),
               ),
-              Text(
+              AppText(
                 "\$${subtotal.toStringAsFixed(2)}",
                 style: const TextStyle(
                   color: Colors.white,
@@ -804,7 +815,7 @@ const SizedBox(height: 16),
             children: [
               Row(
                 children: [
-                  const Text(
+                  const AppText(
                     "Service Charge",
                     style: TextStyle(color: Color(0xFF94A3B8), fontSize: 13),
                   ),
@@ -818,7 +829,7 @@ const SizedBox(height: 16),
                       color: const Color(0xFF3B1E0C),
                       borderRadius: BorderRadius.circular(4),
                     ),
-                    child: const Text(
+                    child: const AppText(
                       "10%",
                       style: TextStyle(
                         color: Color(0xFFF97316),
@@ -829,7 +840,7 @@ const SizedBox(height: 16),
                   ),
                 ],
               ),
-              Text(
+              AppText(
                 "\$${serviceCharge.toStringAsFixed(2)}",
                 style: const TextStyle(
                   color: Colors.white,
@@ -843,11 +854,11 @@ const SizedBox(height: 16),
           const Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
+              AppText(
                 "Table VAT (Included)",
                 style: TextStyle(color: Color(0xFF94A3B8), fontSize: 13),
               ),
-              Text(
+              AppText(
                 "\$0.00",
                 style: TextStyle(
                   color: Colors.white,
@@ -861,7 +872,7 @@ const SizedBox(height: 16),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
+              const AppText(
                 "TOTAL AMOUNT",
                 style: TextStyle(
                   color: Colors.white,
@@ -870,7 +881,7 @@ const SizedBox(height: 16),
                   letterSpacing: 0.5,
                 ),
               ),
-              Text(
+              AppText(
                 "\$${total.toStringAsFixed(2)}",
                 style: const TextStyle(
                   color: AppColors.goldLight,
@@ -924,7 +935,9 @@ const SizedBox(height: 16),
               ),
               child: Icon(
                 icon,
-                color: isSelected ? AppColors.goldLight : const Color(0xFF94A3B8),
+                color: isSelected
+                    ? AppColors.goldLight
+                    : const Color(0xFF94A3B8),
                 size: isSmall ? 18 : 20,
               ),
             ),
@@ -936,7 +949,7 @@ const SizedBox(height: 16),
                   Row(
                     children: [
                       Flexible(
-                        child: Text(
+                        child: AppText(
                           title,
                           style: TextStyle(
                             color: Colors.white,
@@ -957,7 +970,7 @@ const SizedBox(height: 16),
                             color: const Color(0xFF263244),
                             borderRadius: BorderRadius.circular(4),
                           ),
-                          child: Text(
+                          child: AppText(
                             badgeText,
                             style: const TextStyle(
                               color: Color(0xFF94A3B8),
@@ -970,7 +983,7 @@ const SizedBox(height: 16),
                     ],
                   ),
                   const SizedBox(height: 2),
-                  Text(
+                  AppText(
                     subtitle,
                     style: TextStyle(
                       color: const Color(0xFF64748B),
@@ -988,7 +1001,9 @@ const SizedBox(height: 16),
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 border: Border.all(
-                  color: isSelected ? AppColors.goldLight : const Color(0xFF334155),
+                  color: isSelected
+                      ? AppColors.goldLight
+                      : const Color(0xFF334155),
                   width: 2,
                 ),
               ),

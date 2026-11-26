@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+// import 'package:flutter/material.dart';
 import 'package:goodfood_ecosystem/features/auth/data/model/user_model.dart';
 import 'package:goodfood_ecosystem/features/auth/presentation/view_model/auth_error.dart';
 
@@ -43,4 +43,12 @@ class AuthSplashFailState extends AuthState {
   final String msg;
 
   AuthSplashFailState({required this.msg});
+}
+class AuthForgotPasswordLoadingState extends AuthState {}
+
+class AuthForgotPasswordSuccessState extends AuthState {}
+
+class AuthForgotPasswordFailState extends AuthState {
+  final String message;
+  AuthForgotPasswordFailState({required this.message});
 }

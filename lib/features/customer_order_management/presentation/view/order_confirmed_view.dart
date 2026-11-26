@@ -1,5 +1,7 @@
+import 'package:goodfood_ecosystem/core/firebase/firebase_environment.dart';
+import 'package:goodfood_ecosystem/core/widgets/language_toggle.dart';
+import 'package:goodfood_ecosystem/core/localization/goodfood_localizations.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:goodfood_ecosystem/core/constants/app_colors.dart';
@@ -8,10 +10,12 @@ import 'package:goodfood_ecosystem/features/customer_order_management/data/model
 import 'package:goodfood_ecosystem/features/customer_order_management/data/repositry/cart_repo.dart';
 import 'package:goodfood_ecosystem/features/customer_order_management/presentation/view_model/customer_order_cubit.dart';
 import 'package:goodfood_ecosystem/features/menu/data/repositories/menu_repository.dart';
-import 'package:goodfood_ecosystem/features/menu/data/services/meal_local_cache.dart';
+import 'package:goodfood_ecosystem/features/menu/data/services/menu_cache_factory.dart';
 import 'package:goodfood_ecosystem/features/menu/data/services/menu_remote_service.dart';
 import 'package:goodfood_ecosystem/features/menu/presentation/view/menu_screen.dart';
 import 'package:hive/hive.dart';
+import '../../../orders/presentation/navigation/customer_orders_navigation.dart';
+import '../view_model/customer_order_state.dart';
 
 class OrderConfirmedView extends StatelessWidget {
   const OrderConfirmedView({super.key, this.repository, this.cartRepo});
@@ -22,16 +26,15 @@ class OrderConfirmedView extends StatelessWidget {
   void _backToMenu(BuildContext context) {
     final orderCubit = context.read<CustomerOrderCubit>();
 
-    final cRepo = cartRepo ??
-        CartRepo(
-          cartBox: Hive.box<OrderItemModel>('cartBox'),
-        );
+    final cRepo =
+        cartRepo ?? CartRepo(cartBox: Hive.box<OrderItemModel>('cartBox'));
     cRepo.clearCart();
 
-    final menuRepo = repository ??
+    final menuRepo =
+        repository ??
         MenuRepository(
-          MenuRemoteService(FirebaseFirestore.instance),
-          mealLocalCache: SqliteMealLocalCache(),
+          MenuRemoteService(FirebaseEnvironment.store),
+          mealLocalCache: createMenuLocalCache(),
         );
 
     final newOrderCubit = CustomerOrderCubit()
@@ -44,10 +47,7 @@ class OrderConfirmedView extends StatelessWidget {
       MaterialPageRoute(
         builder: (_) => BlocProvider(
           create: (_) => newOrderCubit,
-          child: MenuScreen(
-            repository: menuRepo,
-            repo: cRepo,
-          ),
+          child: MenuScreen(repository: menuRepo, repo: cRepo),
         ),
       ),
       (route) => false,
@@ -62,8 +62,8 @@ class OrderConfirmedView extends StatelessWidget {
     final dispId = order?.dispId.isNotEmpty == true
         ? order!.dispId
         : (orderCubit.pendingOrderId != null
-            ? 'GF-${orderCubit.pendingOrderId!.substring(0, 6).toUpperCase()}'
-            : '#1024');
+              ? 'GF-${orderCubit.pendingOrderId!.substring(0, 6).toUpperCase()}'
+              : '#1024');
 
     final tableNo = order?.tableNo ?? orderCubit.tableNo ?? 5;
     final meals = order?.meals ?? <OrderItemModel>[];
@@ -104,7 +104,7 @@ class OrderConfirmedView extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Text(
+                        const AppText(
                           "GOODFOOD",
                           style: TextStyle(
                             color: Colors.white,
@@ -113,7 +113,7 @@ class OrderConfirmedView extends StatelessWidget {
                             letterSpacing: 1.2,
                           ),
                         ),
-                        Text(
+                        AppText(
                           "RESTAURANT",
                           style: AppFonts.smallGoldTiltle.copyWith(
                             fontSize: 8,
@@ -127,8 +127,11 @@ class OrderConfirmedView extends StatelessWidget {
                 ),
               ),
               actions: [
+                const LanguageToggle(),
                 Padding(
-                  padding: EdgeInsets.only(right: isSmall ? 8.0 : 16.0),
+                  padding: EdgeInsetsDirectional.only(
+                    end: isSmall ? 8.0 : 16.0,
+                  ),
                   child: InkWell(
                     onTap: () => _backToMenu(context),
                     borderRadius: BorderRadius.circular(20),
@@ -223,10 +226,7 @@ class OrderConfirmedView extends StatelessWidget {
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               color: const Color(0xFF181510),
-              border: Border.all(
-                color: AppColors.goldLight,
-                width: 2.5,
-              ),
+              border: Border.all(color: AppColors.goldLight, width: 2.5),
               boxShadow: [
                 BoxShadow(
                   color: AppColors.goldLight.withValues(alpha: 0.25),
@@ -243,7 +243,7 @@ class OrderConfirmedView extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 16),
-        Text(
+        AppText(
           "Order Confirmed!",
           style: TextStyle(
             color: Colors.white,
@@ -253,7 +253,7 @@ class OrderConfirmedView extends StatelessWidget {
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: 8),
-        Text(
+        AppText(
           "Your order has been placed and is currently\nbeing prepared in the kitchen.",
           textAlign: TextAlign.center,
           style: TextStyle(
@@ -289,7 +289,7 @@ class OrderConfirmedView extends StatelessWidget {
                 child: Row(
                   children: [
                     Flexible(
-                      child: Text(
+                      child: AppText(
                         "Order $dispId",
                         style: TextStyle(
                           color: Colors.white,
@@ -309,7 +309,7 @@ class OrderConfirmedView extends StatelessWidget {
                         color: const Color(0xFF382A15),
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      child: const Text(
+                      child: const AppText(
                         "In Progress",
                         style: TextStyle(
                           color: AppColors.goldLight,
@@ -325,7 +325,7 @@ class OrderConfirmedView extends StatelessWidget {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  Text(
+                  AppText(
                     "EST. WAITING TIME",
                     style: TextStyle(
                       color: const Color(0xFF64748B),
@@ -335,7 +335,7 @@ class OrderConfirmedView extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 2),
-                  Text(
+                  AppText(
                     "15-20 min",
                     style: TextStyle(
                       color: AppColors.goldLight,
@@ -348,12 +348,9 @@ class OrderConfirmedView extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 4),
-          Text(
+          AppText(
             "Table $tableNo • ${meals.length} items",
-            style: const TextStyle(
-              color: Color(0xFF64748B),
-              fontSize: 12,
-            ),
+            style: const TextStyle(color: Color(0xFF64748B), fontSize: 12),
           ),
           const SizedBox(height: 16),
           // Progress line tracker
@@ -407,7 +404,7 @@ class OrderConfirmedView extends StatelessWidget {
                     ),
                     const SizedBox(width: 4),
                     Flexible(
-                      child: Text(
+                      child: AppText(
                         "Sent to Kitchen",
                         style: TextStyle(
                           color: AppColors.goldLight,
@@ -421,7 +418,7 @@ class OrderConfirmedView extends StatelessWidget {
                 ),
               ),
               Expanded(
-                child: Text(
+                child: AppText(
                   "Preparing",
                   textAlign: TextAlign.center,
                   style: TextStyle(
@@ -432,9 +429,9 @@ class OrderConfirmedView extends StatelessWidget {
                 ),
               ),
               Expanded(
-                child: Text(
+                child: AppText(
                   "Ready to Serve",
-                  textAlign: TextAlign.right,
+                  textAlign: TextAlign.end,
                   style: TextStyle(
                     color: const Color(0xFF64748B),
                     fontSize: isSmall ? 10 : 11,
@@ -467,7 +464,7 @@ class OrderConfirmedView extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
+              AppText(
                 "ORDER OVERVIEW",
                 style: TextStyle(
                   color: const Color(0xFF94A3B8),
@@ -476,7 +473,7 @@ class OrderConfirmedView extends StatelessWidget {
                   letterSpacing: 0.8,
                 ),
               ),
-              Text(
+              AppText(
                 "\$${total.toStringAsFixed(2)} Paid",
                 style: TextStyle(
                   color: AppColors.goldLight,
@@ -491,7 +488,7 @@ class OrderConfirmedView extends StatelessWidget {
             const Padding(
               padding: EdgeInsets.symmetric(vertical: 12),
               child: Center(
-                child: Text(
+                child: AppText(
                   "No meals listed",
                   style: TextStyle(color: Color(0xFF64748B)),
                 ),
@@ -502,8 +499,7 @@ class OrderConfirmedView extends StatelessWidget {
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
               itemCount: meals.length,
-              separatorBuilder: (context, index) =>
-                  const SizedBox(height: 14),
+              separatorBuilder: (context, index) => const SizedBox(height: 14),
               itemBuilder: (context, index) {
                 final meal = meals[index];
                 return Row(
@@ -523,10 +519,10 @@ class OrderConfirmedView extends StatelessWidget {
                                 fit: BoxFit.cover,
                                 errorWidget: (context, url, error) =>
                                     const Icon(
-                                  Icons.restaurant,
-                                  color: AppColors.goldLight,
-                                  size: 18,
-                                ),
+                                      Icons.restaurant,
+                                      color: AppColors.goldLight,
+                                      size: 18,
+                                    ),
                               )
                             : const Icon(
                                 Icons.restaurant,
@@ -551,7 +547,7 @@ class OrderConfirmedView extends StatelessWidget {
                             overflow: TextOverflow.ellipsis,
                           ),
                           const SizedBox(height: 2),
-                          Text(
+                          AppText(
                             "Qty: ${meal.quantity}",
                             style: const TextStyle(
                               color: Color(0xFF64748B),
@@ -561,7 +557,7 @@ class OrderConfirmedView extends StatelessWidget {
                         ],
                       ),
                     ),
-                    Text(
+                    AppText(
                       "\$${(meal.unitPrice * meal.quantity).toStringAsFixed(2)}",
                       style: TextStyle(
                         color: Colors.white,
@@ -579,12 +575,26 @@ class OrderConfirmedView extends StatelessWidget {
   }
 
   Widget _buildActionButtons(BuildContext context, bool isSmall) {
+    final cubit = context.read<CustomerOrderCubit>();
+    final confirmedId =
+        cubit.state is UpdatePaymentSuccessState ||
+            cubit.state is PlaceOrderSuccessState
+        ? cubit.order?.docId
+        : null;
     return Column(
       children: [
+        if (cubit.trackingWarning != null)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: AppText(
+              cubit.trackingWarning!,
+              style: const TextStyle(color: AppColors.goldLight),
+              textAlign: TextAlign.center,
+            ),
+          ),
         ElevatedButton(
-          onPressed: () {
-            // Button doesn't have action when pressed, as requested
-          },
+          onPressed: () =>
+              openCustomerOrders(context, confirmedOrderId: confirmedId),
           style: ElevatedButton.styleFrom(
             backgroundColor: AppColors.goldDark,
             minimumSize: const Size(double.infinity, 52),
@@ -596,8 +606,8 @@ class OrderConfirmedView extends StatelessWidget {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: const [
-              Text(
-                "View Order Details",
+              AppText(
+                "Track Your Order",
                 style: TextStyle(
                   color: Colors.black,
                   fontSize: 15,
@@ -605,11 +615,7 @@ class OrderConfirmedView extends StatelessWidget {
                 ),
               ),
               SizedBox(width: 4),
-              Icon(
-                Icons.chevron_right,
-                color: Colors.black,
-                size: 20,
-              ),
+              Icon(Icons.chevron_right, color: Colors.black, size: 20),
             ],
           ),
         ),
@@ -624,7 +630,7 @@ class OrderConfirmedView extends StatelessWidget {
               borderRadius: BorderRadius.circular(14),
             ),
           ),
-          child: const Text(
+          child: const AppText(
             "Back to Menu",
             style: TextStyle(
               color: Colors.white,

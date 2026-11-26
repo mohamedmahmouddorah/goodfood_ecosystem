@@ -1,8 +1,8 @@
+import 'package:goodfood_ecosystem/core/firebase/firebase_environment.dart';
 import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:goodfood_ecosystem/features/auth/data/model/user_model.dart';
-
 
 class ChefRemoteService {
   static final ChefRemoteService instance = ChefRemoteService._internal();
@@ -22,7 +22,7 @@ class ChefRemoteService {
 
   CollectionReference<Map<String, dynamic>>? get _chefsCollection {
     if (!isFirebaseReady) return null;
-    return FirebaseFirestore.instance.collection('chefs');
+    return FirebaseEnvironment.store.collection('chefs');
   }
 
   /// Stream of chefs from Firebase Firestore (with fallback to local memory)

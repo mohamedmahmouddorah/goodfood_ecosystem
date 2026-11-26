@@ -1,3 +1,5 @@
+import 'package:goodfood_ecosystem/core/widgets/language_toggle.dart';
+import 'package:goodfood_ecosystem/core/localization/goodfood_localizations.dart';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -9,8 +11,9 @@ import 'package:goodfood_ecosystem/features/customer_order_management/presentati
 import 'package:goodfood_ecosystem/features/customer_order_management/presentation/view_model/cart_cubit.dart';
 import 'package:goodfood_ecosystem/features/customer_order_management/presentation/view_model/cart_state.dart';
 import 'package:goodfood_ecosystem/features/customer_order_management/presentation/view_model/customer_order_cubit.dart';
-import 'package:path/path.dart';
 
+import '../../../../core/widgets/app_bottom_navigation_bar.dart';
+import '../../../orders/presentation/navigation/customer_orders_navigation.dart';
 import '../../data/models/meal_model.dart';
 import '../../data/repositories/menu_repository.dart';
 import '../view_model/menu_cubit.dart';
@@ -32,7 +35,7 @@ class MenuScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiBlocProvider(
       providers: [
-        BlocProvider(create: (_) => MenuCubit(repo: repository)..load()),
+        BlocProvider(create: (_) => MenuCubit(repository)..load()),
         BlocProvider(create: (_) => CartCubit(repo: repo)..loadCartData()),
       ],
       child: _MenuView(repository: repository),
@@ -53,8 +56,6 @@ class _MenuViewState extends State<_MenuView> {
   final _searchController = TextEditingController();
   final _cartNotificationMessage = ValueNotifier<String>('');
   Timer? _cartNotificationTimer;
-  ScaffoldFeatureController<SnackBar, SnackBarClosedReason>?
-  _cartNotificationController;
 
   @override
   void dispose() {
@@ -74,7 +75,7 @@ class _MenuViewState extends State<_MenuView> {
               content: Row(
                 children: [
                   Padding(
-                    padding: const EdgeInsets.only(right: 16.0),
+                    padding: const EdgeInsetsDirectional.only(end: 16.0),
                     child: Container(
                       width: 40,
                       height: 40,
@@ -90,7 +91,7 @@ class _MenuViewState extends State<_MenuView> {
                     ),
                   ),
                   Expanded(
-                    child: Text(
+                    child: AppText(
                       state.msg,
                       style: AppFonts.mainTitle.copyWith(fontSize: 18),
                     ),
@@ -98,11 +99,11 @@ class _MenuViewState extends State<_MenuView> {
                 ],
               ),
               backgroundColor: AppColors.errorBackground,
-              behavior: .floating,
-              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-              margin: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+              behavior: SnackBarBehavior.floating,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadiusGeometry.circular(15),
+                borderRadius: BorderRadius.circular(15),
                 side: BorderSide(color: AppColors.errorBorder),
               ),
             ),
@@ -134,7 +135,7 @@ class _MenuViewState extends State<_MenuView> {
                         mainAxisSize: MainAxisSize.min,
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
+                          AppText(
                             'Added to cart',
                             style: AppFonts.mainTitle.copyWith(
                               fontSize: 16,
@@ -143,7 +144,7 @@ class _MenuViewState extends State<_MenuView> {
                             ),
                           ),
                           const SizedBox(height: 3),
-                          Text(
+                          AppText(
                             '${state.item.mealName} added successfully!',
                             style: AppFonts.mainTitle.copyWith(
                               fontSize: 13,
@@ -189,7 +190,7 @@ class _MenuViewState extends State<_MenuView> {
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 1100),
               child: _MenuHeader(
-                onCartTap: () => () {},
+                onProfileTap: () => _showCustomerDetails(context),
                 onAdminTap: () => _openAdmin(context),
               ),
             ),
@@ -203,6 +204,40 @@ class _MenuViewState extends State<_MenuView> {
                   child: Center(
                     child: ConstrainedBox(
                       constraints: const BoxConstraints(maxWidth: 1100),
+                      child: const Padding(
+                        padding: EdgeInsets.fromLTRB(16, 20, 16, 18),
+                        child: Align(
+                          alignment: AlignmentDirectional.centerStart,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              AppText(
+                                'Our menu',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 28,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                              SizedBox(height: 6),
+                              AppText(
+                                'Made fresh, served with care.',
+                                style: TextStyle(
+                                  color: MenuPalette.muted,
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                SliverToBoxAdapter(
+                  child: Center(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 1100),
                       child: Padding(
                         padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
                         child: TextField(
@@ -210,7 +245,7 @@ class _MenuViewState extends State<_MenuView> {
                           onChanged: context.read<MenuCubit>().search,
                           style: const TextStyle(color: Colors.white),
                           decoration: InputDecoration(
-                            hintText: 'Search meals',
+                            hintText: context.tr('Search meals'),
                             hintStyle: const TextStyle(
                               color: MenuPalette.muted,
                             ),
@@ -221,8 +256,29 @@ class _MenuViewState extends State<_MenuView> {
                             filled: true,
                             fillColor: MenuPalette.surface,
                             contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 16,
                               vertical: 14,
                             ),
+                            isDense: true,
+                            suffixIcon:
+                                ValueListenableBuilder<TextEditingValue>(
+                                  valueListenable: _searchController,
+                                  builder: (_, value, _) => value.text.isEmpty
+                                      ? const SizedBox.shrink()
+                                      : IconButton(
+                                          tooltip: context.tr('Clear search'),
+                                          icon: const Icon(
+                                            Icons.close_rounded,
+                                            size: 18,
+                                          ),
+                                          onPressed: () {
+                                            _searchController.clear();
+                                            context.read<MenuCubit>().search(
+                                              '',
+                                            );
+                                          },
+                                        ),
+                                ),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(14),
                               borderSide: const BorderSide(
@@ -253,7 +309,16 @@ class _MenuViewState extends State<_MenuView> {
                     onSelected: context.read<MenuCubit>().selectCategory,
                   ),
                 ),
-                if (state.isFromCache)
+                if (state.isRefreshing && state.meals.isNotEmpty)
+                  const SliverToBoxAdapter(
+                    child: LinearProgressIndicator(
+                      color: MenuPalette.gold,
+                      minHeight: 2,
+                      backgroundColor: MenuPalette.border,
+                    ),
+                  ),
+                if (state.isFromCache ||
+                    (state.error != null && state.meals.isNotEmpty))
                   SliverToBoxAdapter(
                     child: Padding(
                       padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
@@ -269,13 +334,14 @@ class _MenuViewState extends State<_MenuView> {
                                 Icons.wifi_off_outlined,
                                 color: MenuPalette.gold,
                               ),
-                              title: const Text(
-                                'Showing saved products. Connect to the internet to download updates.',
+                              title: AppText(
+                                state.error ??
+                                    'Showing saved menu while checking for updates.',
                                 style: TextStyle(color: Colors.white),
                               ),
                               trailing: IconButton(
                                 onPressed: context.read<MenuCubit>().load,
-                                tooltip: 'Refresh menu',
+                                tooltip: context.tr('Refresh menu'),
                                 icon: const Icon(
                                   Icons.refresh,
                                   color: MenuPalette.gold,
@@ -310,11 +376,11 @@ class _MenuViewState extends State<_MenuView> {
                     hasScrollBody: false,
                     child: MenuMessage(
                       icon: Icons.restaurant_menu,
-                      message: state.isFromCache
+                      message: state.query.isNotEmpty || state.category != null
+                          ? 'No meals match your search.'
+                          : state.isFromCache
                           ? 'No saved products. Connect to the internet to download the menu.'
-                          : state.query.isEmpty
-                          ? 'No products have been added to the menu yet.'
-                          : 'No meals match your search.',
+                          : 'No products have been added to the menu yet.',
                     ),
                   )
                 else ...[
@@ -380,7 +446,30 @@ class _MenuViewState extends State<_MenuView> {
             );
           },
         ),
-        bottomNavigationBar: const _MenuBottomNavigation(),
+        bottomNavigationBar: AppBottomNavigationBar(
+          items: const [
+            AppNavigationItem(label: 'Home', icon: Icons.home_outlined),
+            AppNavigationItem(
+              label: 'Menu',
+              icon: Icons.restaurant_menu_outlined,
+            ),
+            AppNavigationItem(
+              label: 'Orders',
+              icon: Icons.receipt_long_outlined,
+            ),
+            AppNavigationItem(label: 'Account', icon: Icons.person_outline),
+          ],
+          selectedIndex: 1,
+          onDestinationSelected: (index) {
+            if (index == 0) Navigator.of(context).pushNamed('/welcome');
+            if (index == 2) openCustomerOrders(context);
+            if (index == 3) _showCustomerDetails(context);
+          },
+          backgroundColor: MenuPalette.bg,
+          indicatorColor: MenuPalette.surface,
+          selectedColor: MenuPalette.gold,
+          unselectedColor: MenuPalette.muted,
+        ),
       ),
     );
   }
@@ -409,224 +498,189 @@ class _MenuViewState extends State<_MenuView> {
       ),
     );
   }
+
+  void _showCustomerDetails(BuildContext context) {
+    final customer = context.read<CustomerOrderCubit?>();
+    showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      backgroundColor: MenuPalette.surface,
+      builder: (_) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(24, 8, 24, 32),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const AppText(
+                'Your Details',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 22,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 16),
+              if (customer?.name?.isNotEmpty == true)
+                Text(
+                  customer!.name!,
+                  style: const TextStyle(color: Colors.white, fontSize: 16),
+                ),
+              if (customer?.tableNo != null)
+                AppText(
+                  'Table ${customer!.tableNo}',
+                  style: const TextStyle(color: MenuPalette.gold, fontSize: 16),
+                ),
+              if (customer?.tableNo == null)
+                const AppText(
+                  'No customer details yet.',
+                  style: TextStyle(color: MenuPalette.muted),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 class _MenuHeader extends StatelessWidget {
-  const _MenuHeader({required this.onCartTap, required this.onAdminTap});
-
-  final VoidCallback onCartTap;
+  const _MenuHeader({required this.onProfileTap, required this.onAdminTap});
+  final VoidCallback onProfileTap;
   final VoidCallback onAdminTap;
 
   @override
-  Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        if (constraints.maxWidth < 240) {
-          return Row(
-            children: [
-              const Expanded(
-                child: Text(
-                  'Menu',
+  Widget build(BuildContext context) => LayoutBuilder(
+    builder: (context, constraints) {
+      return Row(
+        children: [
+          const Icon(
+            Icons.restaurant_rounded,
+            color: MenuPalette.gold,
+            size: 25,
+          ),
+          const SizedBox(width: 9),
+          const Expanded(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'GoodFood',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(color: Colors.white, fontSize: 16),
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
-              ),
-              _CartButton()
-              //_adminButton(),
-            ],
-          );
-        }
-        return Row(
-          children: [
-            Container(
-              width: 38,
-              height: 38,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(color: MenuPalette.gold, width: 1.2),
-              ),
-              child: const Icon(
-                Icons.person_outline,
-                color: MenuPalette.gold,
-                size: 23,
-              ),
-            ),
-            const SizedBox(width: 10),
-            const Expanded(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'GoodFood',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                    ),
+                AppText(
+                  'RESTAURANT',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: MenuPalette.gold,
+                    fontSize: 9,
+                    letterSpacing: 1.2,
                   ),
-                  Text(
-                    'RESTAURANT',
-                    style: TextStyle(
-                      color: MenuPalette.gold,
-                      fontSize: 8,
-                      letterSpacing: 0.5,
-                    ),
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
-            _CartButton(),
-            //_adminButton(),
-          ],
-        );
-      },
-    );
-  }
-
- /** Widget _adminButton() => IconButton(
-    onPressed: onAdminTap,
-    tooltip: 'Admin menu',
-    visualDensity: VisualDensity.compact,
-    constraints: const BoxConstraints.tightFor(width: 36, height: 40),
-    padding: EdgeInsets.zero,
-    icon: const Icon(
-      Icons.admin_panel_settings_outlined,
-      color: MenuPalette.gold,
-    ),
-  ); */
-  
+          ),
+          if (constraints.maxWidth >= 340)
+            IconButton(
+              onPressed: null,
+              tooltip: context.tr('Notifications unavailable'),
+              icon: const Icon(Icons.notifications_none_rounded, size: 21),
+              constraints: const BoxConstraints.tightFor(width: 36, height: 40),
+              padding: EdgeInsets.zero,
+            ),
+          const _CartButton(),
+          const SizedBox(width: 6),
+          const LanguageToggle(),
+          IconButton(
+            onPressed: onProfileTap,
+            tooltip: context.tr('Account'),
+            icon: const Icon(
+              Icons.person_outline_rounded,
+              color: MenuPalette.muted,
+              size: 21,
+            ),
+            constraints: const BoxConstraints.tightFor(width: 32, height: 40),
+            padding: EdgeInsets.zero,
+          ),
+        ],
+      );
+    },
+  );
 }
+
 class _CartButton extends StatelessWidget {
-  const _CartButton({super.key});
+  const _CartButton();
 
   @override
   Widget build(BuildContext context) {
     return Stack(
-    children: [
-      IconButton(
-        onPressed: (){
-          print(context.read<CartCubit>());
-print(context.read<CustomerOrderCubit>());
-         Navigator.push(
-  context,
-  MaterialPageRoute(
-    builder: (_) => MultiBlocProvider(
-      providers: [
-        BlocProvider.value(
-          value: context.read<CartCubit>(),
-        ),
-        BlocProvider.value(
-          value: context.read<CustomerOrderCubit>(),
-        ),
-      ],
-      child: CartView(
-        repository: context.read<MenuCubit>().repo,
-      ),
-    ),
-  ),
-);
-        },//onCartTap,
-        tooltip: 'Cart',
-        visualDensity: VisualDensity.compact,
-        constraints: const BoxConstraints.tightFor(width: 36, height: 40),
-        padding: EdgeInsets.zero,
-        icon: const Icon(Icons.shopping_cart_outlined, color: MenuPalette.gold),
-      ),
-      Positioned(
-        right: 0,
-        bottom: 0,
-        child: BlocBuilder<CartCubit, CartState>(
-          builder: (context, state) {
-            final numOfItems = state.cartItems.fold<int>(
-      0,
-      (sum, item) => sum + item.quantity,
-    );
-
-    return Text(
-      '$numOfItems',
-      style: AppFonts.smallGoldTiltle,
-    );
-          },
-        ),
-      ),
-    ],
-  );
-  }
-}
-
-class _MenuBottomNavigation extends StatelessWidget {
-  const _MenuBottomNavigation();
-
-  static const _items = [
-    (icon: Icons.home_outlined, label: 'Home'),
-    (icon: Icons.receipt_long_outlined, label: 'Orders'),
-    (icon: Icons.restaurant_menu_outlined, label: 'Menu'),
-    (icon: Icons.person_outline, label: 'Profile'),
-  ];
-
-  @override
-  Widget build(BuildContext context) {
-    return SafeArea(
-      top: false,
-      child: Container(
-        height: 62,
-        decoration: const BoxDecoration(
-          color: MenuPalette.bg,
-          border: Border(top: BorderSide(color: MenuPalette.border)),
-        ),
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            final showLabels = constraints.maxWidth >= 360;
-            return Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 1100),
-                child: Row(
-                  children: [
-                    for (var index = 0; index < _items.length; index++)
-                      Expanded(
-                        child: Semantics(
-                          button: true,
-                          selected: index == 2,
-                          label: _items[index].label,
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                _items[index].icon,
-                                size: 20,
-                                color: index == 2
-                                    ? MenuPalette.gold
-                                    : MenuPalette.muted,
-                              ),
-                              if (showLabels) ...[
-                                const SizedBox(height: 3),
-                                Text(
-                                  _items[index].label,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(
-                                    color: index == 2
-                                        ? MenuPalette.gold
-                                        : MenuPalette.muted,
-                                    fontSize: 10,
-                                  ),
-                                ),
-                              ],
-                            ],
-                          ),
-                        ),
-                      ),
+      children: [
+        IconButton(
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => MultiBlocProvider(
+                  providers: [
+                    BlocProvider.value(value: context.read<CartCubit>()),
+                    BlocProvider.value(
+                      value: context.read<CustomerOrderCubit>(),
+                    ),
                   ],
+                  child: CartView(repository: context.read<MenuCubit>().repo),
                 ),
               ),
             );
           },
+          tooltip: context.tr('Cart'),
+          visualDensity: VisualDensity.compact,
+          constraints: const BoxConstraints.tightFor(width: 36, height: 40),
+          padding: EdgeInsets.zero,
+          icon: const Icon(
+            Icons.shopping_cart_outlined,
+            color: MenuPalette.gold,
+          ),
         ),
-      ),
+        PositionedDirectional(
+          end: 0,
+          top: 0,
+          child: BlocBuilder<CartCubit, CartState>(
+            builder: (context, state) {
+              final numOfItems = state.cartItems.fold<int>(
+                0,
+                (sum, item) => sum + item.quantity,
+              );
+
+              if (numOfItems == 0) return const SizedBox.shrink();
+              return Container(
+                constraints: const BoxConstraints(minWidth: 15, minHeight: 15),
+                padding: const EdgeInsets.symmetric(horizontal: 3),
+                decoration: BoxDecoration(
+                  color: MenuPalette.gold,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Text(
+                  numOfItems > 99 ? '99+' : '$numOfItems',
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    color: Colors.black,
+                    fontSize: 9,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      ],
     );
   }
 }

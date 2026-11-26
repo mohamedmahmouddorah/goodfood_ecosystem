@@ -1,4 +1,4 @@
-# goodfood_ecosystem
+# GoodFood Ecosystem
 
 A new Flutter project.
 
@@ -18,22 +18,32 @@ samples, guidance on mobile development, and a full API reference.
 
 ## Menu and admin access
 
-The customer menu reads available products from the Firestore `meals`
+The customer menu reads available products from the `Firestore` `meals`
 collection. Use the admin icon in the menu header to open the product list
-directly, without a sign-in page. The list shows products visible to customers.
-The management screen requests all products, including hidden ones. The
-visibility switch changes the meal's `isAvailable` field: enabled products are
-shown to customers, while disabled products remain in the admin list. Firestore
-security rules still control access to hidden products and whether create,
-update, and delete operations are allowed; opening the admin screen does not
-grant cloud permissions.
+directly. The management screen requests all products, including hidden ones.
+The visibility switch changes the meal's `isAvailable` field: enabled products
+are shown to customers, while disabled products remain in the admin list.
+`Firestore` security rules remain responsible for deciding whether product
+management operations are permitted.
 
-Firestore offline persistence caches the menu and queues admin writes on the
-device. Admin add, edit, visibility, and delete actions are also applied to the
-SQLite menu cache immediately, so the management list survives app restarts
-while offline. Firestore retries queued writes automatically after connectivity
-returns; rejected writes are reported and the local cache is restored when
-possible. The first successful online menu load is needed to cache existing
-products. Menu updates appear live while connected. Image URLs are saved as
-strings in each meal document's `imageUrl` field; they are not uploaded to
-Firebase Storage.
+`Firestore`'s built-in persistence is disabled. SQLite caches the menu and
+pending admin writes on the device. Admin changes are sent to Firebase
+immediately and retained in SQLite if Firebase rejects or cannot reach the
+write; the queue retries periodically and at app startup. The first successful
+online menu load is needed to cache existing products. Menu updates appear live
+while connected. Image URLs are saved as strings in each meal document's
+`imageUrl` field.
+
+The cart is currently stored in SQLite on this device; `Firestore` cart
+synchronization is not implemented.
+
+Run the app with the `ImgBB` key:
+
+```powershell
+flutter run --dart-define=IMGBB_API_KEY=YOUR_ROTATED_KEY
+```
+
+Images are uploaded directly to `ImgBB` and their HTTPS URLs are stored in the
+meal's `Firestore` `imageUrl` field. A key passed with `--dart-define` is
+embedded in the compiled app and can be extracted; rotate any key shared in
+chat, and prefer a server-side image upload for production.

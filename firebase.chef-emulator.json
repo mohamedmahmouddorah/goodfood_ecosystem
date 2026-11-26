@@ -1,0 +1,9 @@
+{
+  "firestore": {"rules": "firebase/customer_chef.rules.proposed"},
+  "emulators": {
+    "firestore": {"host": "127.0.0.1", "port": 8787},
+    "auth": {"host": "127.0.0.1", "port": 9099},
+    "ui": {"enabled": false},
+    "singleProjectMode": true
+  }
+}

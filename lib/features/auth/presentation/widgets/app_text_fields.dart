@@ -1,8 +1,9 @@
+import 'package:goodfood_ecosystem/core/localization/goodfood_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:goodfood_ecosystem/core/constants/app_colors.dart';
 import 'package:goodfood_ecosystem/core/constants/app_fonts.dart';
 
-enum AppFieldsType { username, password , tableNo , name }
+enum AppFieldsType { username, password, tableNo, name }
 
 class AppTextFields extends StatefulWidget {
   const AppTextFields({
@@ -10,7 +11,6 @@ class AppTextFields extends StatefulWidget {
     required this.cont,
     required this.hintTxt,
     required this.type,
-
   });
   final TextEditingController cont;
   final String hintTxt;
@@ -23,18 +23,19 @@ class AppTextFields extends StatefulWidget {
 class _AppTextFieldsState extends State<AppTextFields> {
   bool isSecure = false;
   String? validateTableNo(String? value) {
-  if (value == null || value.isEmpty) {
-    return "Table number is required";
+    if (value == null || value.isEmpty) {
+      return context.tr("Table number is required");
+    }
+
+    final number = int.tryParse(value);
+
+    if (number == null || number <= 0) {
+      return context.tr("Please enter a valid table number");
+    }
+
+    return null;
   }
 
-  final number = int.tryParse(value);
-
-  if (number == null || number <= 0) {
-    return "Please enter a valid table number";
-  }
-
-  return null;
-}
   @override
   void initState() {
     super.initState();
@@ -48,32 +49,42 @@ class _AppTextFieldsState extends State<AppTextFields> {
       width: double.infinity,
       child: TextFormField(
         controller: widget.cont,
-        validator: widget.type == AppFieldsType.tableNo ? validateTableNo : widget.type == AppFieldsType.name  ? null  : (value) {
-          if(value == null || value.isEmpty){
-            return "${widget.type == AppFieldsType.username?"Username or Email" : "Password"} is required";
-          }
-          return null;
-        },
+        validator: widget.type == AppFieldsType.tableNo
+            ? validateTableNo
+            : widget.type == AppFieldsType.name
+            ? null
+            : (value) {
+                if (value == null || value.isEmpty) {
+                  return context.tr(
+                    widget.type == AppFieldsType.username
+                        ? 'Username or Email is required'
+                        : 'Password is required',
+                  );
+                }
+                return null;
+              },
         obscureText: isSecure,
         style: AppFonts.subTitle,
         decoration: InputDecoration(
-          contentPadding: EdgeInsets.symmetric( vertical: 20),
+          contentPadding: EdgeInsets.symmetric(vertical: 20),
           isDense: true,
-          hintText: widget.hintTxt,
+          hintText: context.tr(widget.hintTxt),
           prefixIcon: Icon(
             widget.type == AppFieldsType.username
                 ? Icons.person_outlined
-                : widget.type == AppFieldsType.password? Icons.lock_outline : widget.type == AppFieldsType.name? Icons.person_outlined : Icons.assignment_outlined
-                       , size: 28, ),
+                : widget.type == AppFieldsType.password
+                ? Icons.lock_outline
+                : widget.type == AppFieldsType.name
+                ? Icons.person_outlined
+                : Icons.assignment_outlined,
+            size: 28,
+          ),
           iconColor: Colors.white,
           fillColor: AppColors.cardBackground,
           filled: true,
           errorBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(10),
-            borderSide: BorderSide(
-              color: AppColors.errorBorder,
-              width: 2,
-            ),
+            borderSide: BorderSide(color: AppColors.errorBorder, width: 2),
           ),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(10),
@@ -83,25 +94,22 @@ class _AppTextFieldsState extends State<AppTextFields> {
             borderRadius: BorderRadius.circular(10),
             borderSide: BorderSide(color: AppColors.cardBorder, width: 2),
           ),
-      
+
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(10),
             borderSide: BorderSide(color: AppColors.cardBorder, width: 2),
           ),
-          suffixIcon: IconButton(
-            onPressed: () {
-              setState(() {
-                isSecure = !isSecure;
-              });
-            },
-            icon: Icon(
-              widget.type != AppFieldsType.password
-                  ? null
-                  : isSecure
-                  ? Icons.visibility
-                  : Icons.visibility_off,
-            ),
-          ),
+          // Only password fields get a visibility toggle. Supplying an
+          // IconButton with a null icon still reserves suffix space.
+          suffixIcon: widget.type == AppFieldsType.password
+              ? IconButton(
+                  tooltip: isSecure ? 'Show password' : 'Hide password',
+                  onPressed: () => setState(() => isSecure = !isSecure),
+                  icon: Icon(
+                    isSecure ? Icons.visibility_off : Icons.visibility,
+                  ),
+                )
+              : null,
         ),
       ),
     );

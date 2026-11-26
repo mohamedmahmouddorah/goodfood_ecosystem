@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 
 import '../models/meal_model.dart';
 
@@ -16,8 +17,11 @@ class RemoteMealsSnapshot {
 
 /// Only class that talks to Firestore for the menu feature.
 class MenuRemoteService {
-  MenuRemoteService(FirebaseFirestore db) : _meals = db.collection('meals');
+  MenuRemoteService(FirebaseFirestore db)
+    : _db = db,
+      _meals = db.collection('meals');
 
+  final FirebaseFirestore _db;
   final CollectionReference<Map<String, dynamic>> _meals;
 
   /// Live customer list. Only available products are returned.
@@ -49,7 +53,16 @@ class MenuRemoteService {
             isFromCache: snapshot.metadata.isFromCache,
             hasPendingWrites: snapshot.metadata.hasPendingWrites,
           ),
-        );
+        )
+        .handleError((Object error, StackTrace stack) {
+          final code = error is FirebaseException
+              ? error.code
+              : error.runtimeType;
+          debugPrint(
+            'Firestore menu listener failed: collection=meals, code=$code\n$stack',
+          );
+          Error.throwWithStackTrace(error, stack);
+        });
   }
 
   String newMealId() => _meals.doc().id;
@@ -62,11 +75,16 @@ class MenuRemoteService {
   }
 
   Future<void> update(MealModel meal) =>
-      _meals.doc(meal.id).update(meal.toMap());
+      _meals.doc(meal.id).set(meal.toMap(), SetOptions(merge: true));
+
+  Future<void> updateImageUrl(String id, String imageUrl) =>
+      _meals.doc(id).set({'imageUrl': imageUrl}, SetOptions(merge: true));
 
   /// Single-field write: cheapest operation for the visibility switch.
   Future<void> setAvailability(String id, bool value) =>
       _meals.doc(id).update({'isAvailable': value});
 
   Future<void> delete(String id) => _meals.doc(id).delete();
+
+  Future<void> waitForPendingWrites() => _db.waitForPendingWrites();
 }

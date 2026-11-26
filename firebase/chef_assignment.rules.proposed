@@ -1,0 +1,76 @@
+// REVIEW ONLY. Not referenced by firebase.json; do not deploy without approval.
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isAdmin() {
+      return request.auth != null && request.auth.token.admin == true;
+    }
+    function validMeal() {
+      let d = request.resource.data;
+      return d.name is string && d.name.size() > 0 && d.name.size() <= 80
+          && d.price is number && d.price >= 0
+          && d.category in ['starters', 'main_course', 'drinks', 'desserts']
+          && d.isAvailable is bool;
+    }
+    function chefProfile() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+    function isActiveChef() {
+      return request.auth != null
+          && chefProfile().role == 'Chef'
+          && chefProfile().status == 'Active'
+          && chefProfile().name is string
+          && chefProfile().name.size() > 0;
+    }
+    function unassigned(d) {
+      return d.get('acceptedByChefId', null) == null
+          && d.get('acceptedByChefName', null) == null
+          && d.get('acceptedAt', null) == null
+          && d.get('readyAt', null) == null;
+    }
+    function validAcceptance() {
+      let before = resource.data;
+      let after = request.resource.data;
+      return before.status == 'pending' && unassigned(before)
+          && after.diff(before).affectedKeys().hasOnly([
+            'status', 'acceptedByChefId', 'acceptedByChefName', 'acceptedAt'
+          ])
+          && after.status == 'preparing'
+          && after.acceptedByChefId == request.auth.uid
+          && after.acceptedByChefName == chefProfile().name
+          && after.acceptedAt == request.time
+          && after.get('readyAt', null) == null;
+    }
+    function validReady() {
+      let before = resource.data;
+      let after = request.resource.data;
+      return before.status == 'preparing'
+          && before.acceptedByChefId == request.auth.uid
+          && before.get('readyAt', null) == null
+          && after.diff(before).affectedKeys().hasOnly(['status', 'readyAt'])
+          && after.status == 'ready'
+          && after.readyAt == request.time;
+    }
+
+    // Existing meal rules are preserved.
+    match /meals/{mealId} {
+      allow read: if resource.data.isAvailable == true || isAdmin();
+      allow create, update: if isAdmin() && validMeal();
+      allow delete: if isAdmin();
+    }
+    match /users/{userId} {
+      allow get: if request.auth != null && request.auth.uid == userId;
+      allow list, create, update, delete: if false;
+    }
+    match /orders/{orderId} {
+      // status == pending is queryable for legacy documents with missing
+      // assignment fields. Assigned pending anomalies are never shown by UI.
+      allow get, list: if isActiveChef() && (
+        resource.data.status == 'pending'
+        || resource.data.get('acceptedByChefId', null) == request.auth.uid
+      );
+      allow update: if isActiveChef() && (validAcceptance() || validReady());
+      allow create, delete: if false;
+    }
+  }
+}

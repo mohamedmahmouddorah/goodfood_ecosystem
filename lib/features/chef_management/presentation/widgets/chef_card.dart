@@ -1,3 +1,4 @@
+import 'package:goodfood_ecosystem/core/localization/goodfood_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:goodfood_ecosystem/features/auth/data/model/user_model.dart';
 import '../../../../core/constants/app_colors.dart';
@@ -24,10 +25,7 @@ class ChefCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.cardBackground,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(
-          color: AppColors.cardBorder,
-          width: 1,
-        ),
+        border: Border.all(color: AppColors.cardBorder, width: 1),
       ),
       child: Row(
         children: [
@@ -46,9 +44,7 @@ class ChefCard extends StatelessWidget {
                     width: 1.5,
                   ),
                 ),
-                child: ClipOval(
-                  child: _buildAvatar(chef),
-                ),
+                child: ClipOval(child: _buildAvatar(chef)),
               ),
               Positioned(
                 bottom: 0,
@@ -97,12 +93,14 @@ class ChefCard extends StatelessWidget {
                       const SizedBox(width: 6),
                       Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 6, vertical: 2),
+                          horizontal: 6,
+                          vertical: 2,
+                        ),
                         decoration: BoxDecoration(
                           color: AppColors.primaryGold.withValues(alpha: 0.2),
                           borderRadius: BorderRadius.circular(6),
                         ),
-                        child: const Text(
+                        child: const AppText(
                           'ADMIN',
                           style: TextStyle(
                             color: AppColors.primaryGold,
@@ -140,8 +138,10 @@ class ChefCard extends StatelessWidget {
                 const SizedBox(height: 8),
                 // Status Pill
                 Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 3.5),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 3.5,
+                  ),
                   decoration: BoxDecoration(
                     color: chef.isActive
                         ? AppColors.activeGreenBg
@@ -168,7 +168,7 @@ class ChefCard extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(width: 6),
-                      Text(
+                      AppText(
                         chef.isActive ? 'Active' : 'Inactive',
                         style: TextStyle(
                           color: chef.isActive
@@ -234,12 +234,16 @@ class ChefCard extends StatelessWidget {
                     value: 'edit',
                     child: Row(
                       children: const [
-                        Icon(Icons.edit_outlined,
-                            color: AppColors.primaryGold, size: 18),
+                        Icon(
+                          Icons.edit_outlined,
+                          color: AppColors.primaryGold,
+                          size: 18,
+                        ),
                         SizedBox(width: 10),
-                        Text('Edit Chef',
-                            style:
-                                TextStyle(color: Colors.white, fontSize: 13.5)),
+                        AppText(
+                          'Edit Chef',
+                          style: TextStyle(color: Colors.white, fontSize: 13.5),
+                        ),
                       ],
                     ),
                   ),
@@ -257,10 +261,12 @@ class ChefCard extends StatelessWidget {
                           size: 18,
                         ),
                         const SizedBox(width: 10),
-                        Text(
+                        AppText(
                           chef.isActive ? 'Set Inactive' : 'Set Active',
                           style: const TextStyle(
-                              color: Colors.white, fontSize: 13.5),
+                            color: Colors.white,
+                            fontSize: 13.5,
+                          ),
                         ),
                       ],
                     ),
@@ -270,12 +276,19 @@ class ChefCard extends StatelessWidget {
                     value: 'delete',
                     child: Row(
                       children: const [
-                        Icon(Icons.delete_outline,
-                            color: AppColors.inactiveRed, size: 18),
+                        Icon(
+                          Icons.delete_outline,
+                          color: AppColors.inactiveRed,
+                          size: 18,
+                        ),
                         SizedBox(width: 10),
-                        Text('Delete Chef',
-                            style: TextStyle(
-                                color: AppColors.inactiveRed, fontSize: 13.5)),
+                        AppText(
+                          'Delete Chef',
+                          style: TextStyle(
+                            color: AppColors.inactiveRed,
+                            fontSize: 13.5,
+                          ),
+                        ),
                       ],
                     ),
                   ),
@@ -290,7 +303,8 @@ class ChefCard extends StatelessWidget {
 
   Widget _buildAvatar(UserModel chef) {
     final avatar = chef.imgUrl;
-    final hasValidAvatar = avatar != null &&
+    final hasValidAvatar =
+        avatar != null &&
         avatar.trim().isNotEmpty &&
         avatar.trim().toLowerCase() != 'none';
 
@@ -324,7 +338,7 @@ class ChefCard extends StatelessWidget {
         : '?';
 
     return Center(
-      child: Text(
+      child: AppText(
         initial,
         style: const TextStyle(
           color: AppColors.primaryGold,

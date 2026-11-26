@@ -1,3 +1,4 @@
+import 'package:goodfood_ecosystem/core/localization/goodfood_localizations.dart';
 import 'package:flutter/foundation.dart' show ValueListenable;
 import 'package:flutter/material.dart';
 
@@ -13,10 +14,10 @@ ScaffoldFeatureController<SnackBar, SnackBarClosedReason> showAppSnackBar(
   final compact = screenWidth <= 320;
   messenger.clearSnackBars();
   final content = messageListenable == null
-      ? Text(message)
+      ? AppText(message)
       : ValueListenableBuilder<String>(
           valueListenable: messageListenable,
-          builder: (context, value, _) => Text(value),
+          builder: (context, value, _) => AppText(value),
         );
   return messenger.showSnackBar(
     SnackBar(
@@ -27,7 +28,7 @@ ScaffoldFeatureController<SnackBar, SnackBarClosedReason> showAppSnackBar(
               children: [
                 content,
                 Align(
-                  alignment: Alignment.centerRight,
+                  alignment: AlignmentDirectional.centerEnd,
                   child: TextButton(
                     onPressed: () {
                       action.onPressed();
@@ -37,7 +38,7 @@ ScaffoldFeatureController<SnackBar, SnackBarClosedReason> showAppSnackBar(
                       foregroundColor: action.textColor,
                       visualDensity: VisualDensity.compact,
                     ),
-                    child: Text(action.label),
+                    child: AppText(action.label),
                   ),
                 ),
               ],
@@ -48,7 +49,16 @@ ScaffoldFeatureController<SnackBar, SnackBarClosedReason> showAppSnackBar(
           ? (screenWidth - 48).clamp(0.0, 560.0).toDouble()
           : null,
       duration: duration,
-      action: compact ? null : action,
+      action: compact || action == null
+          ? null
+          : SnackBarAction(
+              label: context.tr(action.label),
+              onPressed: action.onPressed,
+              textColor: action.textColor,
+              disabledTextColor: action.disabledTextColor,
+              backgroundColor: action.backgroundColor,
+              disabledBackgroundColor: action.disabledBackgroundColor,
+            ),
     ),
   );
 }

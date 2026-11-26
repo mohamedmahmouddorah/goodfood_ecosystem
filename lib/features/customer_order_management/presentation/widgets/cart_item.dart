@@ -1,3 +1,4 @@
+import 'package:goodfood_ecosystem/core/localization/goodfood_localizations.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -34,7 +35,7 @@ class CartItem extends StatelessWidget {
                   width: 85,
                   height: 85,
                   fit: BoxFit.fill,
-      
+
                   placeholder: (context, url) {
                     return Container(
                       width: 100,
@@ -88,30 +89,36 @@ class CartItem extends StatelessWidget {
                       builder: (context, state) {
                         return Padding(
                           padding: const EdgeInsets.only(bottom: 8.0),
-                          child: Text(
-                            
+                          child: AppText(
                             "\$${(item.unitPrice * item.quantity).toStringAsFixed(2)}",
                             style: AppFonts.reqularSubTitleWhite18.copyWith(
                               fontSize: 16,
                             ),
                           ),
                         );
-                        
                       },
                     ),
-                     Row(
-                       children: [
-                         SizedBox(width : 100 , child: QuatityContainer(quantityKey: quantityKey, item: item)),
-                         IconButton(onPressed: (){
-                          context.read<CartCubit>().removeFromCart(item);
-                         }, icon: Icon(Icons.delete ,color: Colors.white,))
-                       ],
-                     ),
+                    Row(
+                      children: [
+                        SizedBox(
+                          width: 100,
+                          child: QuatityContainer(
+                            quantityKey: quantityKey,
+                            item: item,
+                          ),
+                        ),
+                        IconButton(
+                          onPressed: () {
+                            context.read<CartCubit>().removeFromCart(item);
+                          },
+                          icon: Icon(Icons.delete, color: Colors.white),
+                        ),
+                      ],
+                    ),
                   ],
                 ),
               ),
               SizedBox(width: 20),
-             
             ],
           ),
         ),
