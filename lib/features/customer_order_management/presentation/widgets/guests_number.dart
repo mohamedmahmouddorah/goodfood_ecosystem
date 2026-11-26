@@ -1,11 +1,12 @@
+import 'package:goodfood_ecosystem/core/localization/goodfood_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:goodfood_ecosystem/core/constants/app_colors.dart';
 import 'package:goodfood_ecosystem/core/constants/app_fonts.dart';
 
 class GuestsNumber extends StatelessWidget {
-  GuestsNumber({super.key ,  required this.quantityKey});
+  GuestsNumber({super.key, required this.quantityKey});
 
-  final GlobalKey<FormFieldState<int>>quantityKey;
+  final GlobalKey<FormFieldState<int>> quantityKey;
   @override
   Widget build(BuildContext context) {
     return FormField<int>(
@@ -13,7 +14,7 @@ class GuestsNumber extends StatelessWidget {
       key: quantityKey,
       validator: (value) {
         if (value == null || value < 1) {
-          return "Quantity must be at least 1";
+          return context.tr("Quantity must be at least 1");
         }
         return null;
       },
@@ -64,7 +65,7 @@ class GuestsNumber extends StatelessWidget {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: [
-                     IconButton(
+                    IconButton(
                       onPressed: () {
                         if (state.value! > 1) {
                           state.didChange((state.value ?? 0) - 1);
@@ -72,11 +73,11 @@ class GuestsNumber extends StatelessWidget {
                       },
                       icon: Icon(Icons.remove, size: 28, color: Colors.white),
                     ),
-                    Text(
+                    AppText(
                       "${state.value ?? 0}",
                       style: AppFonts.boldSubTitleWhite18,
                     ),
-                   IconButton(
+                    IconButton(
                       onPressed: () {
                         state.didChange((state.value ?? 0) + 1);
                       },

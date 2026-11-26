@@ -1,3 +1,4 @@
+import 'package:goodfood_ecosystem/core/localization/goodfood_localizations.dart';
 import 'package:flutter/material.dart';
 
 import '../../data/models/meal_model.dart';
@@ -24,7 +25,7 @@ class CategoryChips extends StatelessWidget {
         final children = [for (final category in _items) _chip(category)];
         if (constraints.maxWidth >= 600) {
           return SizedBox(
-            height: 46,
+            height: 40,
             child: Center(
               child: Row(
                 mainAxisSize: MainAxisSize.min,
@@ -39,7 +40,7 @@ class CategoryChips extends StatelessWidget {
           );
         }
         return SizedBox(
-          height: 46,
+          height: 40,
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -54,24 +55,28 @@ class CategoryChips extends StatelessWidget {
 
   Widget _chip(MealCategory? category) {
     final isSelected = category == selected;
-    return GestureDetector(
-      onTap: () => onSelected(category),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 18),
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          gradient: isSelected ? MenuPalette.goldGradient : null,
-          color: isSelected ? null : MenuPalette.surface,
-          borderRadius: BorderRadius.circular(23),
-          border: Border.all(
-            color: isSelected ? MenuPalette.gold : MenuPalette.border,
+    return Semantics(
+      selected: isSelected,
+      button: true,
+      child: GestureDetector(
+        onTap: () => onSelected(category),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14),
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: isSelected ? MenuPalette.gold : MenuPalette.surface,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: isSelected ? MenuPalette.gold : MenuPalette.border,
+            ),
           ),
-        ),
-        child: Text(
-          category?.label ?? 'All',
-          style: TextStyle(
-            color: isSelected ? Colors.black : MenuPalette.muted,
-            fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+          child: AppText(
+            category?.label ?? 'All',
+            style: TextStyle(
+              color: isSelected ? Colors.black : MenuPalette.muted,
+              fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+              fontSize: 13,
+            ),
           ),
         ),
       ),

@@ -44,3 +44,11 @@ class AuthSplashFailState extends AuthState {
 
   AuthSplashFailState({required this.msg});
 }
+class AuthForgotPasswordLoadingState extends AuthState {}
+
+class AuthForgotPasswordSuccessState extends AuthState {}
+
+class AuthForgotPasswordFailState extends AuthState {
+  final String message;
+  AuthForgotPasswordFailState({required this.message});
+}

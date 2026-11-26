@@ -173,8 +173,9 @@ class MenuRepository {
           hasPendingWrites: snapshot.hasPendingWrites,
         );
       }
-    } on FirebaseException catch (e) {
-      throw MenuFailure(_firebaseMessage(e));
+    } on FirebaseException catch (e, stack) {
+      debugPrint('Customer meals read failed [${e.code}]\n$stack');
+      throw MenuFailure(_customerReadMessage(e));
     }
   }
 

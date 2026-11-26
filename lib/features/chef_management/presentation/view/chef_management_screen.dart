@@ -1,3 +1,5 @@
+import 'package:goodfood_ecosystem/core/widgets/language_toggle.dart';
+import 'package:goodfood_ecosystem/core/localization/goodfood_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/constants/app_colors.dart';
@@ -33,9 +35,7 @@ class _ChefManagementView extends StatelessWidget {
           decoration: const BoxDecoration(
             color: Color(0xFF171922),
             borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-            border: Border(
-              top: BorderSide(color: Color(0xFF2B2F3D), width: 1),
-            ),
+            border: Border(top: BorderSide(color: Color(0xFF2B2F3D), width: 1)),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -52,7 +52,7 @@ class _ChefManagementView extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 16),
-              const Text(
+              const AppText(
                 'Filter Chefs By Status',
                 style: TextStyle(
                   color: Colors.white,
@@ -69,17 +69,19 @@ class _ChefManagementView extends StatelessWidget {
                     filter == 'Active'
                         ? Icons.check_circle_outline
                         : filter == 'Inactive'
-                            ? Icons.cancel_outlined
-                            : Icons.people_outline,
+                        ? Icons.cancel_outlined
+                        : Icons.people_outline,
                     color: isSelected
                         ? AppColors.primaryGold
                         : AppColors.textMuted,
                   ),
-                  title: Text(
+                  title: AppText(
                     filter,
                     style: TextStyle(
                       color: isSelected ? AppColors.primaryGold : Colors.white,
-                      fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                      fontWeight: isSelected
+                          ? FontWeight.bold
+                          : FontWeight.w500,
                     ),
                   ),
                   trailing: isSelected
@@ -109,7 +111,7 @@ class _ChefManagementView extends StatelessWidget {
             SnackBar(
               backgroundColor: AppColors.inactiveRed,
               behavior: SnackBarBehavior.floating,
-              content: Text(
+              content: AppText(
                 state.errorMessage!,
                 style: const TextStyle(color: Colors.white),
               ),
@@ -117,20 +119,21 @@ class _ChefManagementView extends StatelessWidget {
           );
           context.read<ChefCubit>().clearMessages();
         } else if (state.successMessage != null) {
-          final isDelete = state.lastDeletedChef != null &&
+          final isDelete =
+              state.lastDeletedChef != null &&
               state.successMessage!.startsWith('Removed');
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               backgroundColor: const Color(0xFF1E212B),
               behavior: SnackBarBehavior.floating,
               duration: const Duration(seconds: 2),
-              content: Text(
+              content: AppText(
                 state.successMessage!,
                 style: const TextStyle(color: Colors.white),
               ),
               action: isDelete
                   ? SnackBarAction(
-                      label: 'UNDO',
+                      label: context.tr('UNDO'),
                       textColor: AppColors.primaryGold,
                       onPressed: () {
                         context.read<ChefCubit>().undoDelete();
@@ -161,17 +164,15 @@ class _ChefManagementView extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
                           // Back Arrow Button
-                          InkWell(
-                            onTap: () {},
-                            borderRadius: BorderRadius.circular(20),
-                            child: const Padding(
-                              padding: EdgeInsets.all(6.0),
-                              child: Icon(
-                                Icons.arrow_back_ios_new_rounded,
-                                color: AppColors.primaryGold,
-                                size: 20,
-                              ),
-                            ),
+                          IconButton(
+                            onPressed: Navigator.of(context).canPop()
+                                ? () => Navigator.of(context).maybePop()
+                                : null,
+                            tooltip: MaterialLocalizations.of(
+                              context,
+                            ).backButtonTooltip,
+                            icon: const BackButtonIcon(),
+                            color: AppColors.primaryGold,
                           ),
                           const SizedBox(width: 8),
 
@@ -182,7 +183,7 @@ class _ChefManagementView extends StatelessWidget {
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 RichText(
-                                  text: const TextSpan(
+                                  text: TextSpan(
                                     style: TextStyle(
                                       fontSize: 22,
                                       fontWeight: FontWeight.bold,
@@ -190,20 +191,22 @@ class _ChefManagementView extends StatelessWidget {
                                     ),
                                     children: [
                                       TextSpan(
-                                        text: 'Chef ',
+                                        text: context.tr('Chef '),
                                         style: TextStyle(
-                                            color: AppColors.textWhite),
+                                          color: AppColors.textWhite,
+                                        ),
                                       ),
                                       TextSpan(
-                                        text: 'Management',
+                                        text: context.tr('Management'),
                                         style: TextStyle(
-                                            color: AppColors.primaryGold),
+                                          color: AppColors.primaryGold,
+                                        ),
                                       ),
                                     ],
                                   ),
                                 ),
                                 const SizedBox(height: 3),
-                                const Text(
+                                const AppText(
                                   'Manage your kitchen team',
                                   style: TextStyle(
                                     color: AppColors.textMuted,
@@ -215,6 +218,7 @@ class _ChefManagementView extends StatelessWidget {
                             ),
                           ),
 
+                          const LanguageToggle(),
                           // Top Right Chef Hat Icon
                           Container(
                             padding: const EdgeInsets.all(8),
@@ -231,7 +235,9 @@ class _ChefManagementView extends StatelessWidget {
                     // Search Bar & Filter Dropdown Row
                     Padding(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 8),
+                        horizontal: 16,
+                        vertical: 8,
+                      ),
                       child: Row(
                         children: [
                           // Search Field
@@ -253,7 +259,9 @@ class _ChefManagementView extends StatelessWidget {
                                   fontSize: 14,
                                 ),
                                 decoration: InputDecoration(
-                                  hintText: 'Search chef by name, email or phone...',
+                                  hintText: context.tr(
+                                    'Search chef by name, email or phone...',
+                                  ),
                                   hintStyle: const TextStyle(
                                     color: AppColors.textPlaceholder,
                                     fontSize: 13,
@@ -274,8 +282,9 @@ class _ChefManagementView extends StatelessWidget {
                                         )
                                       : null,
                                   border: InputBorder.none,
-                                  contentPadding:
-                                      const EdgeInsets.symmetric(vertical: 13),
+                                  contentPadding: const EdgeInsets.symmetric(
+                                    vertical: 13,
+                                  ),
                                 ),
                               ),
                             ),
@@ -288,8 +297,9 @@ class _ChefManagementView extends StatelessWidget {
                                 _showFilterMenu(context, state.selectedFilter),
                             child: Container(
                               height: 48,
-                              padding:
-                                  const EdgeInsets.symmetric(horizontal: 14),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 14,
+                              ),
                               decoration: BoxDecoration(
                                 color: AppColors.inputBackground,
                                 borderRadius: BorderRadius.circular(24),
@@ -301,7 +311,7 @@ class _ChefManagementView extends StatelessWidget {
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  Text(
+                                  AppText(
                                     state.selectedFilter,
                                     style: const TextStyle(
                                       color: AppColors.textWhite,
@@ -335,63 +345,65 @@ class _ChefManagementView extends StatelessWidget {
                                   ),
                                 )
                               : chefsToShow.isEmpty
-                                  ? Center(
-                                      child: Column(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.center,
-                                        children: [
-                                          Icon(
-                                            Icons.person_search_outlined,
-                                            color: AppColors.textPlaceholder
-                                                .withValues(alpha: 0.5),
-                                            size: 64,
-                                          ),
-                                          const SizedBox(height: 12),
-                                          const Text(
-                                            'No chefs found',
-                                            style: TextStyle(
-                                              color: AppColors.textMuted,
-                                              fontSize: 16,
-                                              fontWeight: FontWeight.w600,
-                                            ),
-                                          ),
-                                          const SizedBox(height: 4),
-                                          Text(
-                                            state.searchQuery.isNotEmpty
-                                                ? 'Try adjusting your search criteria'
-                                                : 'Tap "Add Chef" to add your first chef',
-                                            style: const TextStyle(
-                                              color: AppColors.textPlaceholder,
-                                              fontSize: 13,
-                                            ),
-                                          ),
-                                        ],
+                              ? Center(
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(
+                                        Icons.person_search_outlined,
+                                        color: AppColors.textPlaceholder
+                                            .withValues(alpha: 0.5),
+                                        size: 64,
                                       ),
-                                    )
-                                  : ListView.builder(
-                                      padding: const EdgeInsets.fromLTRB(
-                                          16, 10, 16, 90),
-                                      itemCount: chefsToShow.length,
-                                      itemBuilder: (context, index) {
-                                        final chef = chefsToShow[index];
-                                        return ChefCard(
-                                          key: ValueKey(chef.uid ?? index),
-                                          chef: chef,
-                                          onEdit: () {
-                                            AddEditChefDialog.show(
-                                              context,
-                                              chefToEdit: chef,
-                                              onSave: (updated) =>
-                                                  cubit.updateChef(updated),
-                                            );
-                                          },
-                                          onToggleStatus: () =>
-                                              cubit.toggleStatus(chef),
-                                          onDelete: () =>
-                                              cubit.deleteChef(chef),
+                                      const SizedBox(height: 12),
+                                      const AppText(
+                                        'No chefs found',
+                                        style: TextStyle(
+                                          color: AppColors.textMuted,
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      AppText(
+                                        state.searchQuery.isNotEmpty
+                                            ? 'Try adjusting your search criteria'
+                                            : 'Tap "Add Chef" to add your first chef',
+                                        style: const TextStyle(
+                                          color: AppColors.textPlaceholder,
+                                          fontSize: 13,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                )
+                              : ListView.builder(
+                                  padding: const EdgeInsets.fromLTRB(
+                                    16,
+                                    10,
+                                    16,
+                                    90,
+                                  ),
+                                  itemCount: chefsToShow.length,
+                                  itemBuilder: (context, index) {
+                                    final chef = chefsToShow[index];
+                                    return ChefCard(
+                                      key: ValueKey(chef.uid ?? index),
+                                      chef: chef,
+                                      onEdit: () {
+                                        AddEditChefDialog.show(
+                                          context,
+                                          chefToEdit: chef,
+                                          onSave: (updated) =>
+                                              cubit.updateChef(updated),
                                         );
                                       },
-                                    ),
+                                      onToggleStatus: () =>
+                                          cubit.toggleStatus(chef),
+                                      onDelete: () => cubit.deleteChef(chef),
+                                    );
+                                  },
+                                ),
 
                           // Floating "Add Chef" Button positioned on the bottom right
                           Positioned(
@@ -403,8 +415,7 @@ class _ChefManagementView extends StatelessWidget {
                                 onTap: () {
                                   AddEditChefDialog.show(
                                     context,
-                                    onSave: (newChef) =>
-                                        cubit.addChef(newChef),
+                                    onSave: (newChef) => cubit.addChef(newChef),
                                   );
                                 },
                                 borderRadius: BorderRadius.circular(28),
@@ -418,8 +429,9 @@ class _ChefManagementView extends StatelessWidget {
                                     borderRadius: BorderRadius.circular(28),
                                     boxShadow: [
                                       BoxShadow(
-                                        color: AppColors.primaryGold
-                                            .withValues(alpha: 0.35),
+                                        color: AppColors.primaryGold.withValues(
+                                          alpha: 0.35,
+                                        ),
                                         blurRadius: 18,
                                         offset: const Offset(0, 6),
                                       ),
@@ -434,7 +446,7 @@ class _ChefManagementView extends StatelessWidget {
                                         size: 20,
                                       ),
                                       SizedBox(width: 8),
-                                      Text(
+                                      AppText(
                                         'Add Chef',
                                         style: TextStyle(
                                           color: AppColors.addChefText,

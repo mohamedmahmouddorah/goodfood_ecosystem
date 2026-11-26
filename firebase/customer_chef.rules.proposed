@@ -1,0 +1,147 @@
+// REVIEW ONLY. Not referenced by firebase.json; do not deploy without approval.
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isAdmin() {
+      return request.auth != null && request.auth.token.admin == true;
+    }
+    function isActiveAdmin() {
+      return isAdmin()
+          && request.auth.token.firebase.sign_in_provider != 'anonymous'
+          && chefProfile().role == 'Admin'
+          && chefProfile().status == 'Active';
+    }
+    function validMeal() {
+      let d = request.resource.data;
+      return d.name is string && d.name.size() > 0 && d.name.size() <= 80
+          && d.price is number && d.price >= 0
+          && d.category in ['starters', 'main_course', 'drinks', 'desserts']
+          && d.isAvailable is bool;
+    }
+    function chefProfile() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+    function isActiveChef() {
+      return request.auth != null
+          && chefProfile().role == 'Chef'
+          && chefProfile().status == 'Active'
+          && chefProfile().name is string
+          && chefProfile().name.size() > 0;
+    }
+    function unassigned(d) {
+      return d.get('acceptedByChefId', null) == null
+          && d.get('acceptedByChefName', null) == null
+          && d.get('acceptedAt', null) == null
+          && d.get('readyAt', null) == null;
+    }
+    function validAcceptance() {
+      let before = resource.data;
+      let after = request.resource.data;
+      return before.status == 'pending' && unassigned(before)
+          && after.diff(before).affectedKeys().hasOnly([
+            'status', 'acceptedByChefId', 'acceptedByChefName', 'acceptedAt'
+          ])
+          && after.status == 'preparing'
+          && after.acceptedByChefId == request.auth.uid
+          && after.acceptedByChefName == chefProfile().name
+          && after.acceptedAt == request.time
+          && after.get('readyAt', null) == null;
+    }
+    function validReady() {
+      let before = resource.data;
+      let after = request.resource.data;
+      return before.status == 'preparing'
+          && before.acceptedByChefId == request.auth.uid
+          && before.get('readyAt', null) == null
+          && after.diff(before).affectedKeys().hasOnly(['status', 'readyAt'])
+          && after.status == 'ready'
+          && after.readyAt == request.time;
+    }
+
+    function owns(d) {
+      return request.auth != null
+          && d.get('customerId', null) == request.auth.uid;
+    }
+    function validItem(items, i) {
+      return items.size() <= i || validItemData(items[i]);
+    }
+    function validItemData(item) {
+      return item is map
+        && item.keys().hasOnly(['meal_id', 'meal_name', 'meal_image', 'quantity', 'unit_price'])
+        && item.meal_id is string && item.meal_id.size() > 0
+        && item.meal_name is string && item.meal_name.size() > 0
+        && item.meal_name.size() <= 200
+        && item.meal_image is string && item.meal_image.size() <= 4096
+        && item.quantity is int && item.quantity > 0 && item.quantity <= 100
+        && item.unit_price is number && item.unit_price >= 0
+        && item.unit_price <= 1000000;
+    }
+    function validItems(items) {
+      // Bounded validation stays below Firestore's expression evaluation limit.
+      return items is list && items.size() > 0 && items.size() <= 5
+        && validItem(items, 0) && validItem(items, 1) && validItem(items, 2)
+        && validItem(items, 3) && validItem(items, 4);
+    }
+    function validCreation() {
+      let d = request.resource.data;
+      return owns(d)
+        && d.keys().hasOnly(['customerId', 'disp_id', 'table_no', 'no_of_guests',
+          'client_name', 'meals', 'status', 'subtotal', 'service_charge', 'total',
+          'payment_data', 'created_at', 'acceptedByChefId', 'acceptedByChefName',
+          'acceptedAt', 'readyAt'])
+        && d.status == 'pending' && unassigned(d)
+        && d.disp_id is string && d.disp_id.size() > 0 && d.disp_id.size() <= 40
+        && d.table_no is int && d.table_no > 0 && d.table_no <= 10000
+        && d.no_of_guests is int && d.no_of_guests > 0 && d.no_of_guests <= 100
+        && (d.get('client_name', null) == null ||
+          (d.client_name is string && d.client_name.size() <= 200))
+        && validItems(d.meals)
+        && d.subtotal is number && d.subtotal >= 0 && d.subtotal <= 1000000
+        && d.service_charge is number && d.service_charge >= 0 && d.service_charge <= 1000000
+        && d.total is number && d.total >= 0 && d.total <= 2000000
+        && d.total >= d.subtotal + d.service_charge - 0.01
+        && d.total <= d.subtotal + d.service_charge + 0.01
+        && d.get('payment_data', null) == null
+        && d.created_at == request.time;
+    }
+    function validPaymentSelection() {
+      let p = request.resource.data.payment_data;
+      return owns(resource.data)
+        && resource.data.get('payment_data', null) == null
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['payment_data'])
+        && p is map && p.keys().hasOnly(['payment_method', 'payment_date'])
+        && p.payment_method in ['cash', 'card', 'mobileWallet']
+        && p.payment_date == request.time;
+    }
+
+    // Existing meal rules are preserved.
+    match /meals/{mealId} {
+      allow read: if resource.data.isAvailable == true || isAdmin();
+      allow create, update: if isAdmin() && validMeal();
+      allow delete: if isAdmin();
+    }
+    match /users/{userId} {
+      allow get: if request.auth != null && request.auth.uid == userId;
+      allow list, create, update, delete: if false;
+    }
+    // Directory records only. Identity provisioning is outside this collection.
+    match /chefs/{chefId} {
+      allow read, delete: if isActiveAdmin();
+      allow create, update: if isActiveAdmin()
+          && request.resource.data.role == 'Chef'
+          && request.resource.data.status in ['Active', 'Inactive'];
+    }
+    match /orders/{orderId} {
+      // status == pending is queryable for legacy documents with missing
+      // assignment fields. Assigned pending anomalies are never shown by UI.
+      allow get, list: if isActiveAdmin() || owns(resource.data) || (isActiveChef() && (
+        resource.data.status == 'pending'
+        || resource.data.get('acceptedByChefId', null) == request.auth.uid
+      ));
+      allow update: if validPaymentSelection()
+        || (isActiveChef() && (validAcceptance() || validReady()));
+      allow create: if validCreation();
+      allow delete: if false;
+    }
+  }
+}

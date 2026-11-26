@@ -1,23 +1,21 @@
+import 'package:goodfood_ecosystem/core/firebase/firebase_environment.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:goodfood_ecosystem/features/auth/presentation/view_model/auth_cubit.dart';
+import '../../data/repositories/chef_orders_repository.dart';
+import '../../data/repositories/chef_orders_source.dart';
+import 'chef_orders_dashboard.dart';
 
+/// The existing /chef route uses real Auth and Firestore by default.
 class ChefView extends StatelessWidget {
-  const ChefView({super.key});
+  const ChefView({super.key, this.source});
+  final ChefOrdersSource? source;
 
   @override
-  Widget build(BuildContext context) {
-    final authCubit = context.read<AuthCubit>();
-    return Scaffold(
-       body: Center(
-         child: Column(
-          mainAxisAlignment: .center,
-            children: [
-              Text("Welcome ${authCubit.currentUser!.name} , from Ched Page"),
-              Text("دي سكرينة جديدة مش مغير النص يصيع" ,  textDirection: TextDirection.rtl,)
-            ],
-         ),
-       ),
-    );
-  }
+  Widget build(BuildContext context) => ChefOrdersDashboard(
+    source:
+        source ??
+        ChefOrdersRepository(
+          store: FirebaseEnvironment.store,
+          auth: FirebaseEnvironment.auth,
+        ),
+  );
 }

@@ -1,3 +1,5 @@
+import 'package:goodfood_ecosystem/core/widgets/language_toggle.dart';
+import 'package:goodfood_ecosystem/core/localization/goodfood_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -44,13 +46,11 @@ class LoginView extends StatelessWidget {
             header = "Your acoount deactivated";
             body = "Please check your manager, and try again";
             icon = Icons.error;
-          } 
-          else if (state.errorType == AuthError.InvalidEmail) {
+          } else if (state.errorType == AuthError.InvalidEmail) {
             header = "Email Not Valid";
             body = "Please enter valid email, and try again";
             icon = Icons.error;
-          } 
-          else {
+          } else {
             header = "Login Failed";
             body = "Something went wrong. please try again later.";
             icon = Icons.error;
@@ -60,7 +60,7 @@ class LoginView extends StatelessWidget {
               content: Row(
                 children: [
                   Padding(
-                    padding: const EdgeInsets.only(right: 16.0),
+                    padding: const EdgeInsetsDirectional.only(end: 16.0),
                     child: Container(
                       width: 40,
                       height: 40,
@@ -75,11 +75,11 @@ class LoginView extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: .start,
                       children: [
-                        Text(
+                        AppText(
                           header,
                           style: AppFonts.mainTitle.copyWith(fontSize: 18),
                         ),
-                        Text(
+                        AppText(
                           body,
                           style: AppFonts.subTitle.copyWith(fontSize: 12),
                         ),
@@ -101,6 +101,14 @@ class LoginView extends StatelessWidget {
         }
       },
       child: Scaffold(
+        extendBodyBehindAppBar: true,
+        appBar: AppBar(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          automaticallyImplyLeading: false,
+          actions: const [LanguageToggle()],
+        ),
+
         body: Container(
           width: double.infinity,
           height: double.infinity,
@@ -112,8 +120,13 @@ class LoginView extends StatelessWidget {
           ),
           child: Padding(
             padding: const EdgeInsets.only(top: 128.0),
-            child: SingleChildScrollView(
-              child: Column(
+            child: LayoutBuilder(
+              builder: (context, constraints) => SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 480),
+                    child: Column(
                 children: [
                   SvgPicture.asset(
                     "${AppAssets.path}logo.svg",
@@ -121,11 +134,11 @@ class LoginView extends StatelessWidget {
                     width: 130,
                     height: 90,
                   ),
-                  Text("GoodFood", style: AppFonts.mainTitle),
-                  Text("RESTAURANT", style: AppFonts.smallGoldTiltle),
+                  AppText("GoodFood", style: AppFonts.mainTitle),
+                  AppText("RESTAURANT", style: AppFonts.smallGoldTiltle),
                   Padding(
                     padding: const EdgeInsets.only(top: 32.0),
-                    child: Text(
+                    child: AppText(
                       "Staff Login",
                       style: AppFonts.subTitle.copyWith(
                         fontSize: 30,
@@ -134,15 +147,12 @@ class LoginView extends StatelessWidget {
                       ),
                     ),
                   ),
-                  Text(
+                  AppText(
                     "Please login to access your account",
                     style: AppFonts.subTitle.copyWith(fontSize: 16),
                   ),
                   Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16.0,
-                      vertical: 28,
-                    ),
+                    padding: const EdgeInsets.symmetric(vertical: 28),
                     child: Form(
                       key: formKey,
                       child: Column(
@@ -170,17 +180,18 @@ class LoginView extends StatelessWidget {
                               }
                             },
                             style: ElevatedButton.styleFrom(
-                              minimumSize: Size(350, 55),
+                              minimumSize: const Size(double.infinity, 55),
                               backgroundColor: AppColors.goldDark,
                             ),
 
                             child: BlocBuilder<AuthCubit, AuthState>(
-                              
                               builder: (context, state) {
-                                if(state is AuthLoginLoadingState){
-                                  return CircularProgressIndicator(color: Color(0xff3B2414),);
+                                if (state is AuthLoginLoadingState) {
+                                  return CircularProgressIndicator(
+                                    color: Color(0xff3B2414),
+                                  );
                                 }
-                                return Text(
+                                return AppText(
                                   "Login",
                                   style: AppFonts.subTitle.copyWith(
                                     color: Color(0xff3B2414),
@@ -196,10 +207,16 @@ class LoginView extends StatelessWidget {
                     ),
                   ),
                   TextButton(
-                    onPressed: () {},
-                    child: Text("Forgot Password?", style: AppFonts.subTitle),
+                    onPressed: () => Navigator.pushNamed(context, '/forgot_password'),
+                    child: AppText(
+                      "Forgot Password?",
+                      style: AppFonts.subTitle,
+                    ),
                   ),
                 ],
+                    ),
+                  ),
+                ),
               ),
             ),
           ),

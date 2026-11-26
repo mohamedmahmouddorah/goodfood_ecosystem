@@ -12,6 +12,7 @@ class MenuState {
     this.category, // null = All
     this.query = '',
     this.isFromCache = false,
+    this.isRefreshing = false,
     this.revision = 0,
     this.error,
   });
@@ -21,6 +22,7 @@ class MenuState {
   final MealCategory? category;
   final String query;
   final bool isFromCache;
+  final bool isRefreshing;
 
   /// Increases only when a new snapshot arrives (not on search/category).
   final int revision;
@@ -33,6 +35,7 @@ class MenuState {
     ValueGetter<MealCategory?>? category,
     String? query,
     bool? isFromCache,
+    bool? isRefreshing,
     int? revision,
     String? error,
   }) => MenuState(
@@ -41,6 +44,7 @@ class MenuState {
     category: category != null ? category() : this.category,
     query: query ?? this.query,
     isFromCache: isFromCache ?? this.isFromCache,
+    isRefreshing: isRefreshing ?? this.isRefreshing,
     revision: revision ?? this.revision,
     error: error,
   );

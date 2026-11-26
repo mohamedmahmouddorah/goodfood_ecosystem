@@ -117,12 +117,13 @@ class _AddEditMealScreenState extends State<AddEditMealScreen> {
     return Scaffold(
       backgroundColor: MenuPalette.bg,
       appBar: AppBar(
+        actions: const [LanguageToggle()],
         backgroundColor: MenuPalette.bg,
         foregroundColor: Colors.white,
         title: FittedBox(
           fit: BoxFit.scaleDown,
           alignment: Alignment.centerLeft,
-          child: Text(_isEditing ? 'Edit Meal' : 'Add New Meal'),
+          child: AppText(_isEditing ? 'Edit Meal' : 'Add New Meal'),
         ),
       ),
       body: SafeArea(
@@ -201,7 +202,7 @@ class _AddEditMealScreenState extends State<AddEditMealScreen> {
                             .map(
                               (category) => DropdownMenuItem(
                                 value: category,
-                                child: Text(
+                                child: AppText(
                                   category.label,
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
@@ -264,7 +265,13 @@ class _AddEditMealScreenState extends State<AddEditMealScreen> {
                             text.startsWith('.') ? '0$text' : text,
                           );
                           if (price == null || !price.isFinite || price < 0) {
-                            return 'Enter a valid price.';
+                            return context.tr('Enter a valid price.');
+                          }
+                          if (price > _maxPrice ||
+                              !_pricePattern.hasMatch(text)) {
+                            return context.tr(
+                              'Price must be at most 99,999.99.',
+                            );
                           }
                           if (price > _maxPrice ||
                               !_pricePattern.hasMatch(text)) {
@@ -289,7 +296,7 @@ class _AddEditMealScreenState extends State<AddEditMealScreen> {
                               minimumHeight: 48,
                               child: const FittedBox(
                                 fit: BoxFit.scaleDown,
-                                child: Text('Cancel'),
+                                child: AppText('Cancel'),
                               ),
                             ),
                             AppButton(
@@ -379,7 +386,7 @@ class _AddEditMealScreenState extends State<AddEditMealScreen> {
                         ? null
                         : const Icon(Icons.link, color: MenuPalette.muted),
                     suffixIcon: IconButton(
-                      tooltip: 'Clear image URL',
+                      tooltip: context.tr('Clear image URL'),
                       onPressed: () => setState(_imageUrlController.clear),
                       icon: const Icon(Icons.close, color: MenuPalette.muted),
                     ),
@@ -416,7 +423,7 @@ class _AddEditMealScreenState extends State<AddEditMealScreen> {
                   height: compact ? 64 : 104,
                   child: localImagePath == null && imageUrl.isEmpty
                       ? const Center(
-                          child: Text(
+                          child: AppText(
                             'Image preview will appear here',
                             style: TextStyle(color: MenuPalette.muted),
                           ),
@@ -447,7 +454,9 @@ class _AddEditMealScreenState extends State<AddEditMealScreen> {
         !uri.hasAuthority ||
         uri.host.isEmpty ||
         (uri.scheme != 'http' && uri.scheme != 'https')) {
-      return 'Enter a valid image URL starting with http:// or https://.';
+      return context.tr(
+        'Enter a valid image URL starting with http:// or https://.',
+      );
     }
     return null;
   }
@@ -644,7 +653,7 @@ class _AddEditMealScreenState extends State<AddEditMealScreen> {
               ),
               const SizedBox(width: 7),
               Expanded(
-                child: Text(
+                child: AppText(
                   label,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -659,8 +668,8 @@ class _AddEditMealScreenState extends State<AddEditMealScreen> {
   }
 
   Widget _fieldLabel(String text) => Padding(
-    padding: const EdgeInsets.only(left: 2, bottom: 5),
-    child: Text(
+    padding: const EdgeInsetsDirectional.only(start: 2, bottom: 5),
+    child: AppText(
       text,
       style: const TextStyle(color: Colors.white, fontSize: 14),
     ),
@@ -670,7 +679,7 @@ class _AddEditMealScreenState extends State<AddEditMealScreen> {
 
   InputDecoration _decoration({String? hint, bool compact = false}) =>
       InputDecoration(
-        hintText: hint,
+        hintText: hint == null ? null : context.tr(hint),
         hintStyle: const TextStyle(color: MenuPalette.muted),
         filled: true,
         fillColor: MenuPalette.surface,

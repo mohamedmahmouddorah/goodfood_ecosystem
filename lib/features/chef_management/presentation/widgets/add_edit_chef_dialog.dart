@@ -1,3 +1,4 @@
+import 'package:goodfood_ecosystem/core/localization/goodfood_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:goodfood_ecosystem/features/auth/data/model/user_model.dart';
 import '../../../../core/constants/app_colors.dart';
@@ -6,11 +7,7 @@ class AddEditChefDialog extends StatefulWidget {
   final UserModel? chefToEdit;
   final ValueChanged<UserModel> onSave;
 
-  const AddEditChefDialog({
-    super.key,
-    this.chefToEdit,
-    required this.onSave,
-  });
+  const AddEditChefDialog({super.key, this.chefToEdit, required this.onSave});
 
   static Future<void> show(
     BuildContext context, {
@@ -21,10 +18,8 @@ class AddEditChefDialog extends StatefulWidget {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => AddEditChefDialog(
-        chefToEdit: chefToEdit,
-        onSave: onSave,
-      ),
+      builder: (context) =>
+          AddEditChefDialog(chefToEdit: chefToEdit, onSave: onSave),
     );
   }
 
@@ -42,12 +37,15 @@ class _AddEditChefDialogState extends State<AddEditChefDialog> {
   @override
   void initState() {
     super.initState();
-    _nameController =
-        TextEditingController(text: widget.chefToEdit?.name ?? '');
-    _emailController =
-        TextEditingController(text: widget.chefToEdit?.email ?? '');
-    _phoneController =
-        TextEditingController(text: widget.chefToEdit?.phone ?? '');
+    _nameController = TextEditingController(
+      text: widget.chefToEdit?.name ?? '',
+    );
+    _emailController = TextEditingController(
+      text: widget.chefToEdit?.email ?? '',
+    );
+    _phoneController = TextEditingController(
+      text: widget.chefToEdit?.phone ?? '',
+    );
     _isActive = widget.chefToEdit?.status == AccountStatus.Active ?? true;
   }
 
@@ -62,7 +60,8 @@ class _AddEditChefDialogState extends State<AddEditChefDialog> {
   void _submit() {
     if (_formKey.currentState?.validate() ?? false) {
       final updatedChef = UserModel(
-        uid: widget.chefToEdit?.uid ??
+        uid:
+            widget.chefToEdit?.uid ??
             DateTime.now().millisecondsSinceEpoch.toString(),
         name: _nameController.text.trim(),
         email: _emailController.text.trim(),
@@ -90,9 +89,7 @@ class _AddEditChefDialogState extends State<AddEditChefDialog> {
       decoration: const BoxDecoration(
         color: Color(0xFF161820),
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-        border: Border(
-          top: BorderSide(color: Color(0xFF2B2F3D), width: 1),
-        ),
+        border: Border(top: BorderSide(color: Color(0xFF2B2F3D), width: 1)),
       ),
       child: Form(
         key: _formKey,
@@ -118,7 +115,7 @@ class _AddEditChefDialogState extends State<AddEditChefDialog> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
+                  AppText(
                     isEditing ? 'Edit Chef' : 'Add New Chef',
                     style: const TextStyle(
                       color: AppColors.textWhite,
@@ -135,7 +132,7 @@ class _AddEditChefDialogState extends State<AddEditChefDialog> {
               const SizedBox(height: 18),
 
               // Chef Name
-              const Text(
+              const AppText(
                 'Full Name',
                 style: TextStyle(color: AppColors.textMuted, fontSize: 13),
               ),
@@ -149,7 +146,7 @@ class _AddEditChefDialogState extends State<AddEditChefDialog> {
                 ),
                 validator: (val) {
                   if (val == null || val.trim().isEmpty) {
-                    return 'Please enter chef name';
+                    return context.tr('Please enter chef name');
                   }
                   return null;
                 },
@@ -157,7 +154,7 @@ class _AddEditChefDialogState extends State<AddEditChefDialog> {
               const SizedBox(height: 16),
 
               // Chef Email
-              const Text(
+              const AppText(
                 'Email Address',
                 style: TextStyle(color: AppColors.textMuted, fontSize: 13),
               ),
@@ -172,10 +169,10 @@ class _AddEditChefDialogState extends State<AddEditChefDialog> {
                 ),
                 validator: (val) {
                   if (val == null || val.trim().isEmpty) {
-                    return 'Please enter an email';
+                    return context.tr('Please enter an email');
                   }
                   if (!val.contains('@') || !val.contains('.')) {
-                    return 'Please enter a valid email address';
+                    return context.tr('Please enter a valid email address');
                   }
                   return null;
                 },
@@ -183,7 +180,7 @@ class _AddEditChefDialogState extends State<AddEditChefDialog> {
               const SizedBox(height: 16),
 
               // Chef Phone
-              const Text(
+              const AppText(
                 'Phone Number',
                 style: TextStyle(color: AppColors.textMuted, fontSize: 13),
               ),
@@ -201,8 +198,10 @@ class _AddEditChefDialogState extends State<AddEditChefDialog> {
 
               // Status Switch
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 8,
+                ),
                 decoration: BoxDecoration(
                   color: AppColors.cardBackground,
                   borderRadius: BorderRadius.circular(14),
@@ -224,7 +223,7 @@ class _AddEditChefDialogState extends State<AddEditChefDialog> {
                           ),
                         ),
                         const SizedBox(width: 10),
-                        Text(
+                        AppText(
                           _isActive ? 'Active Chef' : 'Inactive Chef',
                           style: TextStyle(
                             color: _isActive
@@ -263,7 +262,7 @@ class _AddEditChefDialogState extends State<AddEditChefDialog> {
                       borderRadius: BorderRadius.circular(26),
                     ),
                   ),
-                  child: Text(
+                  child: AppText(
                     isEditing ? 'Save Changes' : 'Add Chef',
                     style: const TextStyle(
                       fontSize: 16,
@@ -279,35 +278,35 @@ class _AddEditChefDialogState extends State<AddEditChefDialog> {
     );
   }
 
-  InputDecoration _inputDecoration(
-      {required String hint, required IconData icon}) {
+  InputDecoration _inputDecoration({
+    required String hint,
+    required IconData icon,
+  }) {
     return InputDecoration(
       filled: true,
       fillColor: AppColors.inputBackground,
-      hintText: hint,
-      hintStyle:
-          const TextStyle(color: AppColors.textPlaceholder, fontSize: 14),
+      hintText: context.tr(hint),
+      hintStyle: const TextStyle(
+        color: AppColors.textPlaceholder,
+        fontSize: 14,
+      ),
       prefixIcon: Icon(icon, color: AppColors.textMuted, size: 20),
-      contentPadding:
-          const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(14),
         borderSide: const BorderSide(color: AppColors.inputBorder, width: 1),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(14),
-        borderSide:
-            const BorderSide(color: AppColors.primaryGold, width: 1.5),
+        borderSide: const BorderSide(color: AppColors.primaryGold, width: 1.5),
       ),
       errorBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(14),
-        borderSide:
-            const BorderSide(color: AppColors.inactiveRed, width: 1),
+        borderSide: const BorderSide(color: AppColors.inactiveRed, width: 1),
       ),
       focusedErrorBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(14),
-        borderSide:
-            const BorderSide(color: AppColors.inactiveRed, width: 1.5),
+        borderSide: const BorderSide(color: AppColors.inactiveRed, width: 1.5),
       ),
     );
   }

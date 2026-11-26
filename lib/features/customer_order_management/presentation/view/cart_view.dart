@@ -1,3 +1,5 @@
+import 'package:goodfood_ecosystem/core/widgets/language_toggle.dart';
+import 'package:goodfood_ecosystem/core/localization/goodfood_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:goodfood_ecosystem/core/constants/app_colors.dart';
@@ -55,7 +57,7 @@ class _CartViewState extends State<CartView> {
                             mainAxisSize: MainAxisSize.min,
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(
+                              AppText(
                                 'Removed',
                                 style: AppFonts.mainTitle.copyWith(
                                   fontSize: 16,
@@ -64,7 +66,7 @@ class _CartViewState extends State<CartView> {
                                 ),
                               ),
                               const SizedBox(height: 3),
-                              Text(
+                              AppText(
                                 '${state.removedItem.mealName} deleted successfully!',
                                 style: AppFonts.mainTitle.copyWith(
                                   fontSize: 13,
@@ -133,7 +135,7 @@ class _CartViewState extends State<CartView> {
                             mainAxisSize: MainAxisSize.min,
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(
+                              AppText(
                                 'Order Placed',
                                 style: AppFonts.mainTitle.copyWith(
                                   fontSize: 16,
@@ -142,7 +144,7 @@ class _CartViewState extends State<CartView> {
                                 ),
                               ),
                               const SizedBox(height: 3),
-                              Text(
+                              AppText(
                                 '${state.orderId} placed successfully!',
                                 style: AppFonts.mainTitle.copyWith(
                                   fontSize: 13,
@@ -184,9 +186,7 @@ class _CartViewState extends State<CartView> {
                       BlocProvider.value(
                         value: context.read<CustomerOrderCubit>(),
                       ),
-                      BlocProvider.value(
-                        value: context.read<CartCubit>(),
-                      ),
+                      BlocProvider.value(value: context.read<CartCubit>()),
                     ],
                     child: CheckoutView(
                       repository: widget.repository,
@@ -202,7 +202,7 @@ class _CartViewState extends State<CartView> {
                   content: Row(
                     children: [
                       Padding(
-                        padding: const EdgeInsets.only(right: 16.0),
+                        padding: const EdgeInsetsDirectional.only(end: 16.0),
                         child: Container(
                           width: 40,
                           height: 40,
@@ -218,7 +218,7 @@ class _CartViewState extends State<CartView> {
                         ),
                       ),
                       Expanded(
-                        child: Text(
+                        child: AppText(
                           state.msg,
                           style: AppFonts.mainTitle.copyWith(fontSize: 16),
                         ),
@@ -227,8 +227,14 @@ class _CartViewState extends State<CartView> {
                   ),
                   backgroundColor: AppColors.errorBackground,
                   behavior: SnackBarBehavior.floating,
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                  margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 16,
+                  ),
+                  margin: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 16,
+                  ),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(15),
                     side: const BorderSide(color: AppColors.errorBorder),
@@ -262,14 +268,15 @@ class _CartViewState extends State<CartView> {
                       size: 28,
                     ),
                   ),
-                  title: Text(
+                  title: AppText(
                     "Your Order",
                     style: AppFonts.mainTitle.copyWith(fontSize: 22),
                   ),
                   actions: [
+                    const LanguageToggle(),
                     if (!isCartEmpty)
                       Padding(
-                        padding: const EdgeInsets.only(right: 16.0),
+                        padding: const EdgeInsetsDirectional.only(end: 16.0),
                         child: Center(
                           child: Container(
                             decoration: BoxDecoration(
@@ -284,7 +291,7 @@ class _CartViewState extends State<CartView> {
                               horizontal: 12.0,
                               vertical: 4,
                             ),
-                            child: Text(
+                            child: AppText(
                               "${cartState.cartItems.length} items",
                               style: AppFonts.reqularSubTitleWhite18.copyWith(
                                 color: const Color(0xff94A3B8),
@@ -308,91 +315,116 @@ class _CartViewState extends State<CartView> {
                             children: [
                               Expanded(
                                 child: Padding(
-                                  padding: const EdgeInsets.symmetric(horizontal: 20.0),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 20.0,
+                                  ),
                                   child: ListView.builder(
                                     itemCount: cartState.cartItems.length,
                                     itemBuilder: (context, index) => Padding(
-                                      padding: const EdgeInsets.symmetric(vertical: 8.0),
-                                      child: CartItem(item: cartState.cartItems[index]),
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 8.0,
+                                      ),
+                                      child: CartItem(
+                                        item: cartState.cartItems[index],
+                                      ),
                                     ),
                                   ),
                                 ),
                               ),
-                              const Divider(color: Color(0xff142331), thickness: 1.5),
+                              const Divider(
+                                color: Color(0xff142331),
+                                thickness: 1.5,
+                              ),
                               Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 24.0,
+                                ),
                                 child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
                                   children: [
-                                    Text(
+                                    AppText(
                                       "Subtotal",
-                                      style: AppFonts.reqularSubTitleWhite18.copyWith(
-                                        color: const Color(0xff94A3B8),
-                                        fontSize: 15,
-                                      ),
+                                      style: AppFonts.reqularSubTitleWhite18
+                                          .copyWith(
+                                            color: const Color(0xff94A3B8),
+                                            fontSize: 15,
+                                          ),
                                     ),
-                                    Text(
+                                    AppText(
                                       "\$${cartCubit.subTotal.toStringAsFixed(2)}",
-                                      style: AppFonts.reqularSubTitleWhite18.copyWith(
-                                        fontSize: 15,
-                                      ),
+                                      style: AppFonts.reqularSubTitleWhite18
+                                          .copyWith(fontSize: 15),
                                     ),
                                   ],
                                 ),
                               ),
                               const SizedBox(height: 6),
                               Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 24.0,
+                                ),
                                 child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
                                   children: [
-                                    Text(
+                                    AppText(
                                       "Tax",
-                                      style: AppFonts.reqularSubTitleWhite18.copyWith(
-                                        color: const Color(0xff94A3B8),
-                                        fontSize: 15,
-                                      ),
+                                      style: AppFonts.reqularSubTitleWhite18
+                                          .copyWith(
+                                            color: const Color(0xff94A3B8),
+                                            fontSize: 15,
+                                          ),
                                     ),
-                                    Text(
+                                    AppText(
                                       "\$${cartCubit.tax.toStringAsFixed(2)}",
-                                      style: AppFonts.reqularSubTitleWhite18.copyWith(
-                                        fontSize: 15,
-                                      ),
+                                      style: AppFonts.reqularSubTitleWhite18
+                                          .copyWith(fontSize: 15),
                                     ),
                                   ],
                                 ),
                               ),
                               const Padding(
                                 padding: EdgeInsets.symmetric(horizontal: 24.0),
-                                child: Divider(color: Color(0xff142331), thickness: 1.5),
+                                child: Divider(
+                                  color: Color(0xff142331),
+                                  thickness: 1.5,
+                                ),
                               ),
                               Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 24.0,
+                                ),
                                 child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
                                   children: [
-                                    Text(
+                                    AppText(
                                       "Total",
-                                      style: AppFonts.reqularSubTitleWhite18.copyWith(
-                                        color: const Color(0xff94A3B8),
-                                      ),
+                                      style: AppFonts.reqularSubTitleWhite18
+                                          .copyWith(
+                                            color: const Color(0xff94A3B8),
+                                          ),
                                     ),
                                     Column(
-                                      crossAxisAlignment: CrossAxisAlignment.end,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.end,
                                       children: [
-                                        Text(
+                                        AppText(
                                           "\$${(cartCubit.total).toStringAsFixed(2)}",
-                                          style: AppFonts.boldSubTitleWhite18.copyWith(
-                                            fontSize: 24,
-                                            height: 1,
-                                          ),
+                                          style: AppFonts.boldSubTitleWhite18
+                                              .copyWith(
+                                                fontSize: 24,
+                                                height: 1,
+                                              ),
                                         ),
-                                        Text(
+                                        AppText(
                                           "Incl. all taxes",
-                                          style: AppFonts.reqularSubTitleWhite18.copyWith(
-                                            color: const Color(0xff94A3B8),
-                                            fontSize: 11,
-                                          ),
+                                          style: AppFonts.reqularSubTitleWhite18
+                                              .copyWith(
+                                                color: const Color(0xff94A3B8),
+                                                fontSize: 11,
+                                              ),
                                         ),
                                       ],
                                     ),
@@ -420,12 +452,16 @@ class _CartViewState extends State<CartView> {
                                       borderRadius: BorderRadius.circular(15),
                                     ),
                                     backgroundColor: AppColors.goldDark,
-                                    disabledBackgroundColor:
-                                        AppColors.goldDark.withValues(alpha: 0.6),
-                                    shadowColor:
-                                        AppColors.goldDark.withValues(alpha: 0.5),
+                                    disabledBackgroundColor: AppColors.goldDark
+                                        .withValues(alpha: 0.6),
+                                    shadowColor: AppColors.goldDark.withValues(
+                                      alpha: 0.5,
+                                    ),
                                     elevation: 10,
-                                    minimumSize: const Size(double.infinity, 56),
+                                    minimumSize: const Size(
+                                      double.infinity,
+                                      56,
+                                    ),
                                   ),
                                   child: isPlacingOrder
                                       ? const SizedBox(
@@ -437,9 +473,10 @@ class _CartViewState extends State<CartView> {
                                           ),
                                         )
                                       : Row(
-                                          mainAxisAlignment: MainAxisAlignment.center,
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.center,
                                           children: [
-                                            Text(
+                                            AppText(
                                               "Place Order",
                                               style: AppFonts.subTitle.copyWith(
                                                 color: Colors.black,
@@ -477,11 +514,15 @@ class _CartViewState extends State<CartView> {
                               color: const Color(0xFF141C28),
                               borderRadius: BorderRadius.circular(20),
                               border: Border.all(
-                                color: AppColors.goldLight.withValues(alpha: 0.35),
+                                color: AppColors.goldLight.withValues(
+                                  alpha: 0.35,
+                                ),
                               ),
                               boxShadow: [
                                 BoxShadow(
-                                  color: AppColors.goldLight.withValues(alpha: 0.15),
+                                  color: AppColors.goldLight.withValues(
+                                    alpha: 0.15,
+                                  ),
                                   blurRadius: 28,
                                   spreadRadius: 4,
                                 ),
@@ -499,7 +540,7 @@ class _CartViewState extends State<CartView> {
                                   ),
                                 ),
                                 const SizedBox(height: 18),
-                                Text(
+                                AppText(
                                   "Placing your order...",
                                   style: AppFonts.boldSubTitleWhite18.copyWith(
                                     fontSize: 16,
@@ -507,7 +548,7 @@ class _CartViewState extends State<CartView> {
                                   ),
                                 ),
                                 const SizedBox(height: 6),
-                                const Text(
+                                const AppText(
                                   "Please wait a moment",
                                   style: TextStyle(
                                     fontSize: 12,
@@ -564,7 +605,7 @@ class _CartViewState extends State<CartView> {
               ),
             ),
             const SizedBox(height: 28),
-            Text(
+            AppText(
               "Your Cart is Empty",
               style: AppFonts.mainTitle.copyWith(
                 fontSize: 24,
@@ -573,7 +614,7 @@ class _CartViewState extends State<CartView> {
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 12),
-            Text(
+            AppText(
               "Looks like you haven't added anything to your cart yet.\nExplore our delicious menu and find your favorite meal!",
               style: AppFonts.reqularSubTitleWhite18.copyWith(
                 fontSize: 14,
@@ -609,7 +650,7 @@ class _CartViewState extends State<CartView> {
                     size: 22,
                   ),
                   const SizedBox(width: 10),
-                  Text(
+                  AppText(
                     "Start Shopping",
                     style: AppFonts.subTitle.copyWith(
                       color: Colors.black,

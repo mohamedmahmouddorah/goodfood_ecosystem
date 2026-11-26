@@ -1,3 +1,4 @@
+import 'package:goodfood_ecosystem/core/localization/goodfood_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -34,9 +35,9 @@ class _SplashViewState extends State<SplashView> {
             (route) => false,
           );
         } else if (state is AuthSplashFailState) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(state.msg)),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: AppText(state.msg)));
         }
       },
       child: Scaffold(
@@ -46,9 +47,7 @@ class _SplashViewState extends State<SplashView> {
           height: double.infinity,
           decoration: BoxDecoration(
             image: DecorationImage(
-              image: AssetImage(
-                "${AppAssets.path}splash_background.png",
-              ),
+              image: AssetImage("${AppAssets.path}splash_background.png"),
               fit: .cover,
             ),
           ),
@@ -62,31 +61,19 @@ class _SplashViewState extends State<SplashView> {
                 width: 130,
                 height: 90,
               ),
-              Text(
-                "GoodFood",
-                style: AppFonts.mainTitle,
-              ),
-              Text(
-                "RESTAURANT",
-                style: AppFonts.smallGoldTiltle,
-              ),
+              AppText("GoodFood", style: AppFonts.mainTitle),
+              AppText("RESTAURANT", style: AppFonts.smallGoldTiltle),
               Padding(
                 padding: const EdgeInsets.only(top: 16.0),
-                child: Text(
+                child: AppText(
                   "Good Food - Better Moments",
                   style: AppFonts.subTitle,
                 ),
               ),
               Spacer(),
-              Text(
-                "Loading...",
-                style: AppFonts.subTitle,
-              ),
+              AppText("Loading...", style: AppFonts.subTitle),
               Padding(
-                padding: const EdgeInsets.only(
-                  bottom: 16.0,
-                  top: 8,
-                ),
+                padding: const EdgeInsets.only(bottom: 16.0, top: 8),
                 child: SizedBox(
                   width: 250,
                   child: LinearProgressIndicator(

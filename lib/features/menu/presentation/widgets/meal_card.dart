@@ -1,3 +1,4 @@
+import 'package:goodfood_ecosystem/core/localization/goodfood_localizations.dart';
 import 'package:flutter/material.dart';
 
 import '../../data/models/meal_model.dart';

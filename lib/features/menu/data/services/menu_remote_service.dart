@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 
 import '../models/meal_model.dart';
 
@@ -52,7 +53,16 @@ class MenuRemoteService {
             isFromCache: snapshot.metadata.isFromCache,
             hasPendingWrites: snapshot.metadata.hasPendingWrites,
           ),
-        );
+        )
+        .handleError((Object error, StackTrace stack) {
+          final code = error is FirebaseException
+              ? error.code
+              : error.runtimeType;
+          debugPrint(
+            'Firestore menu listener failed: collection=meals, code=$code\n$stack',
+          );
+          Error.throwWithStackTrace(error, stack);
+        });
   }
 
   String newMealId() => _meals.doc().id;

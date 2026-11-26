@@ -1,3 +1,4 @@
+import 'package:goodfood_ecosystem/core/localization/goodfood_localizations.dart';
 import 'package:flutter/material.dart';
 
 import '../../data/models/meal_model.dart';
@@ -66,7 +67,7 @@ class AdminMealTile extends StatelessWidget {
                                       fontSize: 15,
                                     ),
                                   ),
-                                  Text(
+                                  AppText(
                                     '\$${meal.price.toStringAsFixed(2)}',
                                     style: const TextStyle(
                                       color: MenuPalette.muted,
@@ -89,7 +90,7 @@ class AdminMealTile extends StatelessWidget {
                                     height: 32,
                                     child: IconButton(
                                       onPressed: onDelete,
-                                      tooltip: 'Delete meal',
+                                      tooltip: context.tr('Delete meal'),
                                       padding: EdgeInsets.zero,
                                       visualDensity: VisualDensity.compact,
                                       icon: const Icon(
@@ -103,7 +104,7 @@ class AdminMealTile extends StatelessWidget {
                               )
                             else ...[
                               _availabilitySwitch(),
-                              _deleteButton(),
+                              _deleteButton(context),
                             ],
                           ],
                         ),
@@ -111,7 +112,7 @@ class AdminMealTile extends StatelessWidget {
                           const SizedBox(height: 4),
                           Align(
                             alignment: Alignment.centerRight,
-                            child: Text(
+                            child: AppText(
                               meal.isAvailable
                                   ? 'Visible to customers'
                                   : 'Hidden from customers',
@@ -152,7 +153,7 @@ class AdminMealTile extends StatelessWidget {
                                 ),
                               ),
                               const SizedBox(height: 4),
-                              Text(
+                              AppText(
                                 '\$${meal.price.toStringAsFixed(2)}',
                                 style: const TextStyle(
                                   color: MenuPalette.muted,
@@ -166,7 +167,7 @@ class AdminMealTile extends StatelessWidget {
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             _availabilitySwitch(),
-                            Text(
+                            AppText(
                               meal.isAvailable ? 'Visible' : 'Hidden',
                               style: const TextStyle(
                                 color: MenuPalette.muted,
@@ -175,7 +176,7 @@ class AdminMealTile extends StatelessWidget {
                             ),
                           ],
                         ),
-                        _deleteButton(),
+                        _deleteButton(context),
                       ],
                     ),
             );
@@ -197,9 +198,9 @@ class AdminMealTile extends StatelessWidget {
     ),
   );
 
-  Widget _deleteButton() => IconButton(
+  Widget _deleteButton(BuildContext context) => IconButton(
     onPressed: onDelete,
-    tooltip: 'Delete meal',
+    tooltip: context.tr('Delete meal'),
     visualDensity: VisualDensity.compact,
     icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
   );

@@ -1,3 +1,4 @@
+import 'package:goodfood_ecosystem/core/localization/goodfood_localizations.dart';
 import 'package:flutter/material.dart';
 
 import 'menu_palette.dart';
@@ -26,7 +27,7 @@ class MenuMessage extends StatelessWidget {
           children: [
             Icon(icon, color: MenuPalette.muted, size: 42),
             const SizedBox(height: 12),
-            Text(
+            AppText(
               message,
               textAlign: TextAlign.center,
               style: const TextStyle(color: MenuPalette.muted),
@@ -35,7 +36,7 @@ class MenuMessage extends StatelessWidget {
               const SizedBox(height: 12),
               TextButton(
                 onPressed: onAction,
-                child: Text(
+                child: AppText(
                   actionLabel!,
                   style: const TextStyle(color: MenuPalette.gold),
                 ),

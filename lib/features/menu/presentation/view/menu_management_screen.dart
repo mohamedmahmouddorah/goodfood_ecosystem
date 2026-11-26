@@ -1,3 +1,5 @@
+import 'package:goodfood_ecosystem/core/widgets/language_toggle.dart';
+import 'package:goodfood_ecosystem/core/localization/goodfood_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -270,25 +272,26 @@ class _MenuManagementView extends StatelessWidget {
 
   Future<void> _confirmDelete(BuildContext context, MealModel meal) async {
     final shouldDelete = await showDialog<bool>(
+      useRootNavigator: false,
       context: context,
       builder: (dialogContext) => AlertDialog(
         backgroundColor: MenuPalette.surface,
-        title: const Text(
+        title: const AppText(
           'Delete meal?',
           style: TextStyle(color: Colors.white),
         ),
-        content: Text(
+        content: AppText(
           'This will permanently remove ${meal.name}.',
           style: const TextStyle(color: MenuPalette.muted),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext, false),
-            child: const Text('Cancel'),
+            child: const AppText('Cancel'),
           ),
           TextButton(
             onPressed: () => Navigator.pop(dialogContext, true),
-            child: const Text(
+            child: const AppText(
               'Delete',
               style: TextStyle(color: Colors.redAccent),
             ),

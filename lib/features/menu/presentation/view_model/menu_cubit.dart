@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:flutter/foundation.dart' show ValueGetter;
+import 'package:flutter/foundation.dart' show ValueGetter, debugPrint;
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../data/models/meal_model.dart';
@@ -23,6 +23,7 @@ class MenuCubit extends Cubit<MenuState> {
   List<MealModel> _allMeals = const [];
   MealSearchIndex _index = MealSearchIndex.empty;
   bool _hasSnapshot = false;
+  int _generation = 0;
 
   List<MealModel> get availableMeals => _allMeals;
 
@@ -97,24 +98,28 @@ class MenuCubit extends Cubit<MenuState> {
     ValueGetter<MealCategory?>? category,
     bool? isFromCache,
     bool newSnapshot = false,
+    bool clearError = false,
   }) {
     if (isClosed) return;
     final q = query ?? state.query;
     final c = category == null ? state.category : category();
     emit(
       state.copyWith(
-        status: MenuStatus.success,
+        status: clearError ? MenuStatus.success : state.status,
         query: q,
         category: () => c,
         meals: _index.search(q, category: c),
         isFromCache: isFromCache ?? state.isFromCache,
         revision: newSnapshot ? state.revision + 1 : state.revision,
+        isRefreshing: false,
+        error: clearError ? null : state.error,
       ),
     );
   }
 
   @override
-  Future<void> close() {
+  Future<void> close() async {
+    ++_generation;
     _debounce?.cancel();
     _subscription?.cancel();
     _localChangeSubscription.cancel();

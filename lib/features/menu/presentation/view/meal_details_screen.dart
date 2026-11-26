@@ -1,3 +1,5 @@
+import 'package:goodfood_ecosystem/core/widgets/language_toggle.dart';
+import 'package:goodfood_ecosystem/core/localization/goodfood_localizations.dart';
 import 'package:flutter/material.dart';
 
 import '../../data/models/meal_model.dart';
@@ -15,9 +17,10 @@ class MealDetailsScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: MenuPalette.bg,
       appBar: AppBar(
+        actions: const [LanguageToggle()],
         backgroundColor: MenuPalette.bg,
         foregroundColor: Colors.white,
-        title: const Text(
+        title: const AppText(
           'Meal Details',
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
@@ -40,7 +43,7 @@ class MealDetailsScreen extends StatelessWidget {
               ),
             ),
           );
-          final details = _mealInformation();
+          final details = _mealInformation(context);
 
           return SingleChildScrollView(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
@@ -73,7 +76,7 @@ class MealDetailsScreen extends StatelessWidget {
                                 Icons.add_shopping_cart,
                                 color: Colors.black,
                               ),
-                              label: const Text(
+                              label: const AppText(
                                 'Add to Cart',
                                 style: TextStyle(
                                   color: Colors.black,
