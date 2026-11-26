@@ -119,7 +119,7 @@ class MyApp extends StatelessWidget {
                   ),
           );
         },
-        '/admin': (context) => AdminView(),
+        '/admin': (context) => AdminView(menu: repository),
         '/chef': (context) => ChefView(),
         '/login': (context) => LoginView(),
         '/welcome': (context) => WelcomeView(),

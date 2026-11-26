@@ -164,17 +164,15 @@ class _ChefManagementView extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
                           // Back Arrow Button
-                          InkWell(
-                            onTap: () {},
-                            borderRadius: BorderRadius.circular(20),
-                            child: const Padding(
-                              padding: EdgeInsets.all(6.0),
-                              child: Icon(
-                                Icons.arrow_back_ios_new_rounded,
-                                color: AppColors.primaryGold,
-                                size: 20,
-                              ),
-                            ),
+                          IconButton(
+                            onPressed: Navigator.of(context).canPop()
+                                ? () => Navigator.of(context).maybePop()
+                                : null,
+                            tooltip: MaterialLocalizations.of(
+                              context,
+                            ).backButtonTooltip,
+                            icon: const BackButtonIcon(),
+                            color: AppColors.primaryGold,
                           ),
                           const SizedBox(width: 8),
 

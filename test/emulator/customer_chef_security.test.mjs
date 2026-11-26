@@ -52,6 +52,40 @@ test('customer creates own order; other customer and unauthenticated cannot get 
   await assertFails(getDoc(doc(customer,'orders','legacy')));
 });
 
+test('only active non-anonymous claimed admins can monitor all orders and manage chef directory records', async () => {
+  await env.withSecurityRulesDisabled(async context => {
+    const store = context.firestore();
+    for (const [uid, status] of [['admin', 'Active'], ['inactive-admin', 'Inactive']]) {
+      await setDoc(doc(store, 'users', uid), {name: uid, role: 'Admin', status});
+    }
+  });
+  const claimed = (uid, provider = 'password') => env.authenticatedContext(uid, {
+    admin: true, firebase: {sign_in_provider: provider},
+  }).firestore();
+  const admin = claimed('admin');
+  const orderRef = doc(admin, 'orders', 'legacy');
+  const chefs = collection(admin, 'chefs');
+  const chefRef = doc(chefs, 'directory-only');
+  await assertSucceeds(getDocs(collection(admin, 'orders')));
+  await assertSucceeds(getDoc(orderRef));
+  await assertFails(updateDoc(orderRef, {status: 'delivered'}));
+  await assertFails(updateDoc(orderRef, {status: 'canceled'}));
+  await assertFails(deleteDoc(orderRef));
+  await assertSucceeds(setDoc(chefRef, {name: 'Chef', role: 'Chef', status: 'Active'}));
+  await assertSucceeds(getDocs(chefs));
+  await assertSucceeds(updateDoc(chefRef, {status: 'Inactive'}));
+  await assertFails(setDoc(doc(admin, 'users', 'directory-only'), {role: 'Admin'}));
+  for (const denied of [
+    db('admin'), claimed('inactive-admin'), claimed('chef-a'),
+    claimed('admin', 'anonymous'), db('guest'), env.unauthenticatedContext().firestore(),
+  ]) {
+    await assertFails(getDocs(collection(denied, 'orders')));
+    await assertFails(getDocs(collection(denied, 'chefs')));
+    await assertFails(updateDoc(doc(denied, 'chefs', 'directory-only'), {status: 'Active'}));
+  }
+  await assertSucceeds(deleteDoc(chefRef));
+});
+
 test('forged owner, preassignment, state, payment and untrusted creation time are rejected',async()=>{
   const customer=db('customer');
   for(const change of [{customerId:'other'},{status:'ready'},{acceptedByChefId:'chef-a'},

@@ -273,6 +273,7 @@ class _MenuManagementView extends StatelessWidget {
 
   Future<void> _confirmDelete(BuildContext context, MealModel meal) async {
     final shouldDelete = await showDialog<bool>(
+      useRootNavigator: false,
       context: context,
       builder: (dialogContext) => AlertDialog(
         backgroundColor: MenuPalette.surface,

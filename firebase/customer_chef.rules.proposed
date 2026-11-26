@@ -5,6 +5,12 @@ service cloud.firestore {
     function isAdmin() {
       return request.auth != null && request.auth.token.admin == true;
     }
+    function isActiveAdmin() {
+      return isAdmin()
+          && request.auth.token.firebase.sign_in_provider != 'anonymous'
+          && chefProfile().role == 'Admin'
+          && chefProfile().status == 'Active';
+    }
     function validMeal() {
       let d = request.resource.data;
       return d.name is string && d.name.size() > 0 && d.name.size() <= 80
@@ -118,10 +124,17 @@ service cloud.firestore {
       allow get: if request.auth != null && request.auth.uid == userId;
       allow list, create, update, delete: if false;
     }
+    // Directory records only. Identity provisioning is outside this collection.
+    match /chefs/{chefId} {
+      allow read, delete: if isActiveAdmin();
+      allow create, update: if isActiveAdmin()
+          && request.resource.data.role == 'Chef'
+          && request.resource.data.status in ['Active', 'Inactive'];
+    }
     match /orders/{orderId} {
       // status == pending is queryable for legacy documents with missing
       // assignment fields. Assigned pending anomalies are never shown by UI.
-      allow get, list: if owns(resource.data) || (isActiveChef() && (
+      allow get, list: if isActiveAdmin() || owns(resource.data) || (isActiveChef() && (
         resource.data.status == 'pending'
         || resource.data.get('acceptedByChefId', null) == request.auth.uid
       ));

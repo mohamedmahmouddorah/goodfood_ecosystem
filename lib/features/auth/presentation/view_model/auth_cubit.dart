@@ -21,6 +21,12 @@ class AuthCubit extends Cubit<AuthState> {
   UserModel? currentUser;
   final FirebaseAuth authInstance;
   final FirebaseFirestore storeInstance;
+
+  Future<void> logout() async {
+    await authInstance.signOut();
+    currentUser = null;
+  }
+
   Future<void> login(String email, String pass) async {
     emit(AuthLoginLoadingState());
     try {
