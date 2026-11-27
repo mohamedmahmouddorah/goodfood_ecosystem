@@ -4,13 +4,14 @@ import 'package:goodfood_ecosystem/core/constants/app_colors.dart';
 import 'package:goodfood_ecosystem/core/constants/app_fonts.dart';
 
 class GuestsNumber extends StatelessWidget {
-  GuestsNumber({super.key, required this.quantityKey});
+  GuestsNumber({super.key, required this.quantityKey, this.initialValue = 1});
 
   final GlobalKey<FormFieldState<int>> quantityKey;
+  final int initialValue;
   @override
   Widget build(BuildContext context) {
     return FormField<int>(
-      initialValue: 1,
+      initialValue: initialValue,
       key: quantityKey,
       validator: (value) {
         if (value == null || value < 1) {

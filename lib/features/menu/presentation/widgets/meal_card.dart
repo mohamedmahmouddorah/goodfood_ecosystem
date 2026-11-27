@@ -33,9 +33,13 @@ class MealCard extends StatelessWidget {
             padding: const EdgeInsets.all(8),
             child: LayoutBuilder(
               builder: (context, constraints) {
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
+                final isLargeCard = constraints.maxWidth >= 360;
+                final cardPadding = constraints.maxWidth >= 420 ? 18.0 : 14.0;
+                return Padding(
+                  padding: EdgeInsets.all(cardPadding),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
                     Expanded(
                       child: Hero(
                         tag: 'meal_${meal.id}',
@@ -55,7 +59,7 @@ class MealCard extends StatelessWidget {
                       meal.name,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: Colors.white,
                         fontSize: 15,
                         fontWeight: FontWeight.w500,
@@ -93,18 +97,18 @@ class MealCard extends StatelessWidget {
                               child: Icon(
                                 Icons.add,
                                 color: Colors.black,
-                                size: constraints.maxWidth < 120 ? 17 : 20,
+                                size: isLargeCard ? 28 : constraints.maxWidth >= 300 ? 25 : constraints.maxWidth < 120 ? 17 : 22,
                               ),
                             ),
                           ),
                         ),
                       ],
                     ),
-                  ],
+                    ],
+                  ),
                 );
               },
             ),
-          ),
         ),
       ),
     );

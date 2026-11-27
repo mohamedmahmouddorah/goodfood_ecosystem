@@ -111,7 +111,7 @@ class AdminPageWidth extends StatelessWidget {
     top: false,
     child: Center(
       child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 1200),
+        constraints: const BoxConstraints(maxWidth: 1500),
         child: child,
       ),
     ),
