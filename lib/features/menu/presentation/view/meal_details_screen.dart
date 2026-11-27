@@ -106,7 +106,7 @@ class MealDetailsScreen extends StatelessWidget {
     );
   }
 
-  Widget _mealInformation(BuildContext context) => Column(
+  Widget _mealInformation() => Column(
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
       Text(
@@ -118,7 +118,7 @@ class MealDetailsScreen extends StatelessWidget {
         ),
       ),
       const SizedBox(height: 12),
-      AppText(
+      Text(
         '\$${meal.price.toStringAsFixed(2)}',
         style: const TextStyle(
           color: MenuPalette.gold,
@@ -134,13 +134,13 @@ class MealDetailsScreen extends StatelessWidget {
           borderRadius: BorderRadius.circular(20),
           border: Border.all(color: MenuPalette.border),
         ),
-        child: AppText(
+        child: Text(
           meal.category.label,
           style: const TextStyle(color: MenuPalette.muted),
         ),
       ),
       const SizedBox(height: 22),
-      const AppText(
+      const Text(
         'Description',
         style: TextStyle(
           color: Colors.white,
@@ -151,7 +151,7 @@ class MealDetailsScreen extends StatelessWidget {
       const SizedBox(height: 8),
       Text(
         meal.description.isEmpty
-            ? context.tr('No description available.')
+            ? 'No description available.'
             : meal.description,
         style: const TextStyle(
           color: MenuPalette.muted,

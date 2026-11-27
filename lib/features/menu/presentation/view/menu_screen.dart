@@ -13,7 +13,6 @@ import 'package:goodfood_ecosystem/features/customer_order_management/presentati
 import 'package:goodfood_ecosystem/features/customer_order_management/presentation/view_model/customer_order_cubit.dart';
 
 import '../../../../core/widgets/app_bottom_navigation_bar.dart';
-import '../../../orders/presentation/navigation/customer_orders_navigation.dart';
 import '../../data/models/meal_model.dart';
 import '../../data/repositories/menu_repository.dart';
 import '../view_model/menu_cubit.dart';
@@ -182,12 +181,23 @@ class _MenuViewState extends State<_MenuView> {
       },
       child: Scaffold(
         backgroundColor: MenuPalette.bg,
-        appBar: null,
-        body: LayoutBuilder(
-          builder: (context, layout) {
-            final useSideNavigation = layout.maxWidth >= 800;
-            final menuContent = BlocBuilder<MenuCubit, MenuState>(
-                builder: (context, state) {
+        appBar: AppBar(
+          backgroundColor: MenuPalette.bg,
+          foregroundColor: Colors.white,
+          automaticallyImplyLeading: false,
+          titleSpacing: 16,
+          title: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 1100),
+              child: _MenuHeader(
+                onCartTap: () {},
+                onAdminTap: () => _openAdmin(context),
+              ),
+            ),
+          ),
+        ),
+        body: BlocBuilder<MenuCubit, MenuState>(
+          builder: (context, state) {
             return CustomScrollView(
               slivers: [
                 SliverToBoxAdapter(
@@ -505,19 +515,26 @@ class _MenuViewState extends State<_MenuView> {
             );
           },
         ),
-        bottomNavigationBar: MediaQuery.sizeOf(context).width >= 800
-            ? null
-            : AppBottomNavigationBar(
-                items: _navigationItems(),
-                selectedIndex: 1,
-                onDestinationSelected: (index) => _handleNavigation(context, index),
-                backgroundColor: MenuPalette.bg,
-                indicatorColor: MenuPalette.surface,
-                selectedColor: MenuPalette.gold,
-                unselectedColor: MenuPalette.muted,
-                height: 64,
-                maxWidth: 1400,
-              ),
+        bottomNavigationBar: AppBottomNavigationBar(
+          items: const [
+            AppNavigationItem(label: 'Home', icon: Icons.home_outlined),
+            AppNavigationItem(
+              label: 'Orders',
+              icon: Icons.receipt_long_outlined,
+            ),
+            AppNavigationItem(
+              label: 'Menu',
+              icon: Icons.restaurant_menu_outlined,
+            ),
+            AppNavigationItem(label: 'Profile', icon: Icons.person_outline),
+          ],
+          selectedIndex: 2,
+          onDestinationSelected: (_) {},
+          backgroundColor: MenuPalette.bg,
+          indicatorColor: MenuPalette.surface,
+          selectedColor: MenuPalette.gold,
+          unselectedColor: MenuPalette.muted,
+        ),
       ),
     );
   }
@@ -616,30 +633,55 @@ class _MenuHeader extends StatelessWidget {
   final VoidCallback onAdminTap;
 
   @override
-  Widget build(BuildContext context) => LayoutBuilder(
-    builder: (context, constraints) {
-      final large = MediaQuery.sizeOf(context).width >= 800;
-      return Row(
-        children: [
-          Icon(
-            Icons.restaurant_rounded,
-            color: MenuPalette.gold,
-            size: large ? 48 : 25,
-          ),
-          SizedBox(width: large ? 12 : 9),
-          Expanded(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'GoodFood',
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        if (constraints.maxWidth < 240) {
+          return const Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'Menu',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: large ? 36 : 18,
-                    fontWeight: FontWeight.w700,
+                  style: TextStyle(color: Colors.white, fontSize: 16),
+                ),
+              ),
+              _CartButton(),
+            ],
+          );
+        }
+
+        return Row(
+          children: [
+            Container(
+              width: 38,
+              height: 38,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(color: MenuPalette.gold, width: 1.2),
+              ),
+              child: const Icon(
+                Icons.person_outline,
+                color: MenuPalette.gold,
+                size: 23,
+              ),
+            ),
+            const SizedBox(width: 10),
+            const Expanded(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'GoodFood',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
                 ),
                 AppText(
@@ -654,22 +696,12 @@ class _MenuHeader extends StatelessWidget {
                 ),
               ],
             ),
-          ),
-          if (constraints.maxWidth >= 340)
-            IconButton(
-              onPressed: null,
-              tooltip: context.tr('Notifications unavailable'),
-              icon: Icon(Icons.notifications_none_rounded, size: large ? 27 : 21),
-              constraints: BoxConstraints.tightFor(width: large ? 48 : 36, height: large ? 48 : 40),
-              padding: EdgeInsets.zero,
-            ),
-          const _CartButton(),
-          const SizedBox(width: 6),
-          const LanguageToggle(),
-        ],
-      );
-    },
-  );
+            const _CartButton(),
+          ],
+        );
+      },
+    );
+  }
 }
 
 class _CartButton extends StatelessWidget {
@@ -686,32 +718,32 @@ class _CartButton extends StatelessWidget {
               MaterialPageRoute(
                 builder: (_) => MultiBlocProvider(
                   providers: [
-                    BlocProvider.value(value: context.read<CartCubit>()),
+                    BlocProvider.value(
+                      value: context.read<CartCubit>(),
+                    ),
                     BlocProvider.value(
                       value: context.read<CustomerOrderCubit>(),
                     ),
                   ],
-                  child: CartView(repository: context.read<MenuCubit>().repo),
+                  child: CartView(
+                    repository: context.read<MenuCubit>().repo,
+                  ),
                 ),
               ),
             );
           },
-          tooltip: context.tr('Cart'),
+          tooltip: 'Cart',
           visualDensity: VisualDensity.compact,
           constraints: BoxConstraints.tightFor(
             width: MediaQuery.sizeOf(context).width >= 800 ? 48 : 36,
             height: MediaQuery.sizeOf(context).width >= 800 ? 48 : 40,
           ),
           padding: EdgeInsets.zero,
-          icon: Icon(
-            Icons.shopping_cart_outlined,
-            color: MenuPalette.gold,
-            size: MediaQuery.sizeOf(context).width >= 800 ? 27 : 24,
-          ),
+          icon: const Icon(Icons.shopping_cart_outlined, color: MenuPalette.gold),
         ),
-        PositionedDirectional(
-          end: 0,
-          top: 0,
+        Positioned(
+          right: 0,
+          bottom: 0,
           child: BlocBuilder<CartCubit, CartState>(
             builder: (context, state) {
               final numOfItems = state.cartItems.fold<int>(
@@ -719,23 +751,9 @@ class _CartButton extends StatelessWidget {
                 (sum, item) => sum + item.quantity,
               );
 
-              if (numOfItems == 0) return const SizedBox.shrink();
-              return Container(
-                constraints: const BoxConstraints(minWidth: 15, minHeight: 15),
-                padding: const EdgeInsets.symmetric(horizontal: 3),
-                decoration: BoxDecoration(
-                  color: MenuPalette.gold,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Text(
-                  numOfItems > 99 ? '99+' : '$numOfItems',
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    color: Colors.black,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
+              return Text(
+                '$numOfItems',
+                style: AppFonts.smallGoldTiltle,
               );
             },
           ),

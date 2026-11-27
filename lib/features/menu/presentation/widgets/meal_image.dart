@@ -31,57 +31,32 @@ class MealImage extends StatelessWidget {
   );
 
   @override
-  Widget build(BuildContext context) => LayoutBuilder(
-    builder: (context, constraints) {
-      final renderedWidth = width?.isFinite == true
-          ? width
-          : constraints.hasBoundedWidth
-          ? constraints.maxWidth
-          : null;
-      final renderedHeight = height?.isFinite == true
-          ? height
-          : constraints.hasBoundedHeight
-          ? constraints.maxHeight
-          : null;
-      final decodeHeight =
-          cacheHeight ??
-          (renderedWidth != null &&
-                  renderedWidth.isFinite &&
-                  renderedWidth > 0 &&
-                  renderedHeight != null &&
-                  renderedHeight.isFinite &&
-                  renderedHeight > 0
-              ? (cacheWidth * renderedHeight / renderedWidth).round().clamp(
-                  1,
-                  10000,
-                )
-              : cacheWidth);
-      final localPathStr = localPath;
-      if (!kIsWeb && localPathStr != null && localPathStr.isNotEmpty) {
-        return Image.file(
-          File(localPathStr),
-          width: width,
-          height: height,
-          fit: BoxFit.cover,
-          cacheWidth: cacheWidth,
-          cacheHeight: decodeHeight,
-          errorBuilder: (_, _, _) => _error,
-        );
-      }
-
-      if (url.isEmpty) return _error;
-
-      return CachedNetworkImage(
-        imageUrl: url,
+  Widget build(BuildContext context) {
+    final localPathStr = localPath;
+    if (localPathStr != null && localPathStr.isNotEmpty) {
+      return Image.file(
+        File(localPathStr),
         width: width,
         height: height,
         fit: BoxFit.cover,
-        memCacheWidth: cacheWidth,
-        memCacheHeight: decodeHeight,
-        fadeInDuration: const Duration(milliseconds: 100),
-        placeholder: (_, _) => _placeholder,
-        errorWidget: (_, _, _) => _error,
+        cacheWidth: cacheWidth,
+        cacheHeight: cacheHeight ?? cacheWidth,
+        errorBuilder: (_, _, _) => _error,
       );
-    },
-  );
+    }
+
+    if (url.isEmpty) return _error;
+
+    return CachedNetworkImage(
+      imageUrl: url,
+      width: width,
+      height: height,
+      fit: BoxFit.cover,
+      memCacheWidth: cacheWidth,
+      memCacheHeight: cacheHeight ?? cacheWidth,
+      fadeInDuration: const Duration(milliseconds: 100),
+      placeholder: (_, _) => _placeholder,
+      errorWidget: (_, _, _) => _error,
+    );
+  }
 }
