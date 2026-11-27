@@ -27,28 +27,88 @@ class AuthCubit extends Cubit<AuthState> {
     currentUser = null;
   }
 
-  Future<void> login(String email, String pass) async {
-    emit(AuthLoginLoadingState());
-    try {
-      final userCrd = await authInstance.signInWithEmailAndPassword(
-        email: email,
-        password: pass,
-      );
-      if (userCrd.user == null) {
-        emit(AuthLoginFailState(errorType: AuthError.unknown));
-        return;
-      } else {
-        final userMap = await storeInstance
-            .collection("users")
-            .doc(userCrd.user!.uid)
-            .get();
-        currentUser = UserModel.fromMap(userMap.data()!);
-        emit(AuthLoginSuccessState(user: currentUser!));
-      }
-    } on FirebaseAuthException catch (e) {
-      emit(AuthLoginFailState(errorType: mapAuthError(e)));
-    } catch (e) {
+Future<void> login(String email, String pass) async {
+  emit(AuthLoginLoadingState());
+
+  UserCredential userCredential;
+
+  // 1. Firebase Authentication
+  try {
+    userCredential = await authInstance.signInWithEmailAndPassword(
+      email: email.trim(),
+      password: pass,
+    );
+
+    if (userCredential.user == null) {
       emit(AuthLoginFailState(errorType: AuthError.unknown));
+      return;
+    }
+  } on FirebaseAuthException catch (e) {
+    debugPrint('AUTH LOGIN ERROR: ${e.code}');
+    debugPrint('AUTH LOGIN MESSAGE: ${e.message}');
+
+    emit(AuthLoginFailState(errorType: mapAuthError(e)));
+    return;
+  } catch (e) {
+    debugPrint('UNEXPECTED AUTH ERROR: $e');
+
+    emit(AuthLoginFailState(errorType: AuthError.unknown));
+    return;
+  }
+
+  // 2. Firestore User Data
+  try {
+    final user = userCredential.user!;
+
+    final userMap = await storeInstance
+        .collection('users')
+        .doc(user.uid)
+        .get();
+
+    if (!userMap.exists || userMap.data() == null) {
+      debugPrint('USER PROFILE NOT FOUND: ${user.uid}');
+
+      emit(AuthLoginFailState(errorType: AuthError.unknown));
+      return;
+    }
+
+    currentUser = UserModel.fromMap(userMap.data()!);
+
+    emit(AuthLoginSuccessState(user: currentUser!));
+  } on FirebaseException catch (e) {
+    debugPrint('FIRESTORE LOGIN ERROR: ${e.code}');
+    debugPrint('FIRESTORE MESSAGE: ${e.message}');
+
+    emit(AuthLoginFailState(errorType: AuthError.unknown));
+  } catch (e) {
+    debugPrint('USER MODEL ERROR: $e');
+
+    emit(AuthLoginFailState(errorType: AuthError.unknown));
+  }
+}
+
+  Future<void> sendPasswordResetEmail(String email) async {
+    emit(AuthForgotPasswordLoadingState());
+    try {
+      await authInstance.sendPasswordResetEmail(email: email.trim());
+      emit(AuthForgotPasswordSuccessState());
+    } on FirebaseAuthException catch (e) {
+      // Do not reveal whether an email is registered (account enumeration).
+      if (e.code == 'user-not-found') {
+        emit(AuthForgotPasswordSuccessState());
+        return;
+      }
+      emit(
+        AuthForgotPasswordFailState(
+          message: 'We could not process your request. Check your connection and try again.',
+        ),
+      );
+    } catch (_) {
+      emit(
+        AuthForgotPasswordFailState(
+          message: 'We could not process your request. Check your connection and try again.',
+        ),
+      );
     }
   }
 

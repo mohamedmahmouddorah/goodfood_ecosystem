@@ -135,26 +135,44 @@ class RoleView extends StatelessWidget {
                     ),
                     Padding(
                       padding: const EdgeInsets.only(top: 32.0),
-                      child: Row(
-                        children: [
-                          SizedBox(width: 12),
-                          Expanded(
-                            child: RoleContainer(
+                      child: LayoutBuilder(
+                        builder: (context, constraints) {
+                          final cards = [
+                            RoleContainer(
                               path: "${AppAssets.path}customer.png",
                               desc: "For customers to place orders",
                               type: "Customer",
                             ),
-                          ),
-                          SizedBox(width: 12),
-                          Expanded(
-                            child: RoleContainer(
+                            RoleContainer(
                               path: "${AppAssets.path}chef.png",
                               desc: "For staff to manage tasks",
                               type: "Stuff",
                             ),
-                          ),
-                          SizedBox(width: 12),
-                        ],
+                          ];
+                          return Center(
+                            child: ConstrainedBox(
+                              constraints: const BoxConstraints(maxWidth: 760),
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 16),
+                                child: constraints.maxWidth < 560
+                                    ? Column(
+                                        children: [
+                                          cards[0],
+                                          const SizedBox(height: 16),
+                                          cards[1],
+                                        ],
+                                      )
+                                    : Row(
+                                        children: [
+                                          Expanded(child: cards[0]),
+                                          const SizedBox(width: 20),
+                                          Expanded(child: cards[1]),
+                                        ],
+                                      ),
+                              ),
+                            ),
+                          );
+                        },
                       ),
                     ),
                   ],

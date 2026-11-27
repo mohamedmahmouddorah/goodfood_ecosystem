@@ -22,10 +22,10 @@ class CategoryChips extends StatelessWidget {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final children = [for (final category in _items) _chip(category)];
+        final children = [for (final category in _items) _chip(category, large: constraints.maxWidth >= 800)];
         if (constraints.maxWidth >= 600) {
           return SizedBox(
-            height: 40,
+            height: constraints.maxWidth >= 800 ? 52 : 40,
             child: Center(
               child: Row(
                 mainAxisSize: MainAxisSize.min,
@@ -40,7 +40,7 @@ class CategoryChips extends StatelessWidget {
           );
         }
         return SizedBox(
-          height: 40,
+          height: constraints.maxWidth >= 800 ? 52 : 40,
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -53,7 +53,7 @@ class CategoryChips extends StatelessWidget {
     );
   }
 
-  Widget _chip(MealCategory? category) {
+  Widget _chip(MealCategory? category, {bool large = false}) {
     final isSelected = category == selected;
     return Semantics(
       selected: isSelected,
@@ -61,7 +61,7 @@ class CategoryChips extends StatelessWidget {
       child: GestureDetector(
         onTap: () => onSelected(category),
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14),
+          padding: EdgeInsets.symmetric(horizontal: large ? 20 : 14, vertical: large ? 4 : 0),
           alignment: Alignment.center,
           decoration: BoxDecoration(
             color: isSelected ? MenuPalette.gold : MenuPalette.surface,
@@ -75,7 +75,7 @@ class CategoryChips extends StatelessWidget {
             style: TextStyle(
               color: isSelected ? Colors.black : MenuPalette.muted,
               fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
-              fontSize: 13,
+              fontSize: large ? 16 : 13,
             ),
           ),
         ),

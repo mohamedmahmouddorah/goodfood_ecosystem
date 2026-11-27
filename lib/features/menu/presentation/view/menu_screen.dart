@@ -13,7 +13,6 @@ import 'package:goodfood_ecosystem/features/customer_order_management/presentati
 import 'package:goodfood_ecosystem/features/customer_order_management/presentation/view_model/customer_order_cubit.dart';
 
 import '../../../../core/widgets/app_bottom_navigation_bar.dart';
-import '../../../orders/presentation/navigation/customer_orders_navigation.dart';
 import '../../data/models/meal_model.dart';
 import '../../data/repositories/menu_repository.dart';
 import '../view_model/menu_cubit.dart';
@@ -22,7 +21,9 @@ import '../widgets/category_chips.dart';
 import '../widgets/meal_card.dart';
 import '../widgets/menu_message.dart';
 import '../widgets/menu_palette.dart';
+import '../../../customer_order_management/presentation/view/customer_details_view.dart';
 import 'meal_details_screen.dart';
+import '../../../orders/presentation/navigation/customer_orders_navigation.dart';
 import 'menu_management_screen.dart';
 
 class MenuScreen extends StatelessWidget {
@@ -181,169 +182,125 @@ class _MenuViewState extends State<_MenuView> {
       },
       child: Scaffold(
         backgroundColor: MenuPalette.bg,
-        appBar: AppBar(
-          backgroundColor: MenuPalette.bg,
-          foregroundColor: Colors.white,
-          automaticallyImplyLeading: false,
-          titleSpacing: 16,
-          title: Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 1100),
-              child: _MenuHeader(
-                onProfileTap: () => _showCustomerDetails(context),
-                onAdminTap: () => _openAdmin(context),
-              ),
-            ),
-          ),
-        ),
-        body: BlocBuilder<MenuCubit, MenuState>(
-          builder: (context, state) {
-            return CustomScrollView(
-              slivers: [
-                SliverToBoxAdapter(
-                  child: Center(
-                    child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 1100),
-                      child: const Padding(
-                        padding: EdgeInsets.fromLTRB(16, 20, 16, 18),
-                        child: Align(
-                          alignment: AlignmentDirectional.centerStart,
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              AppText(
-                                'Our menu',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 28,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                              SizedBox(height: 6),
-                              AppText(
-                                'Made fresh, served with care.',
-                                style: TextStyle(
-                                  color: MenuPalette.muted,
-                                  fontSize: 14,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-                SliverToBoxAdapter(
-                  child: Center(
-                    child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 1100),
-                      child: Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-                        child: TextField(
-                          controller: _searchController,
-                          onChanged: context.read<MenuCubit>().search,
-                          style: const TextStyle(color: Colors.white),
-                          decoration: InputDecoration(
-                            hintText: context.tr('Search meals'),
-                            hintStyle: const TextStyle(
-                              color: MenuPalette.muted,
-                            ),
-                            prefixIcon: const Icon(
-                              Icons.search,
-                              color: MenuPalette.muted,
-                            ),
-                            filled: true,
-                            fillColor: MenuPalette.surface,
-                            contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 14,
-                            ),
-                            isDense: true,
-                            suffixIcon:
-                                ValueListenableBuilder<TextEditingValue>(
-                                  valueListenable: _searchController,
-                                  builder: (_, value, _) => value.text.isEmpty
-                                      ? const SizedBox.shrink()
-                                      : IconButton(
-                                          tooltip: context.tr('Clear search'),
-                                          icon: const Icon(
-                                            Icons.close_rounded,
-                                            size: 18,
-                                          ),
-                                          onPressed: () {
-                                            _searchController.clear();
-                                            context.read<MenuCubit>().search(
-                                              '',
-                                            );
-                                          },
-                                        ),
-                                ),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(14),
-                              borderSide: const BorderSide(
-                                color: MenuPalette.border,
-                              ),
-                            ),
-                            enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(14),
-                              borderSide: const BorderSide(
-                                color: MenuPalette.border,
-                              ),
-                            ),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(14),
-                              borderSide: const BorderSide(
-                                color: MenuPalette.gold,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-                SliverToBoxAdapter(
-                  child: CategoryChips(
-                    selected: state.category,
-                    onSelected: context.read<MenuCubit>().selectCategory,
-                  ),
-                ),
-                if (state.isRefreshing && state.meals.isNotEmpty)
-                  const SliverToBoxAdapter(
-                    child: LinearProgressIndicator(
-                      color: MenuPalette.gold,
-                      minHeight: 2,
-                      backgroundColor: MenuPalette.border,
-                    ),
-                  ),
-                if (state.isFromCache ||
-                    (state.error != null && state.meals.isNotEmpty))
+        body: LayoutBuilder(
+          builder: (context, layout) {
+            final useSideNavigation = layout.maxWidth >= 1000;
+            final menuContent = BlocBuilder<MenuCubit, MenuState>(
+              builder: (context, state) => CustomScrollView(
+                slivers: [
                   SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
-                      child: Center(
-                        child: ConstrainedBox(
-                          constraints: const BoxConstraints(maxWidth: 1100),
-                          child: Material(
-                            color: MenuPalette.surface,
-                            borderRadius: BorderRadius.circular(12),
-                            child: ListTile(
-                              dense: true,
-                              leading: const Icon(
-                                Icons.wifi_off_outlined,
-                                color: MenuPalette.gold,
+                    child: Center(
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 1600),
+                        child: Padding(
+                          padding: EdgeInsets.fromLTRB(
+                            layout.maxWidth >= 1400 ? 48 : 28,
+                            layout.maxWidth >= 1400 ? 40 : 28,
+                            layout.maxWidth >= 1400 ? 48 : 28,
+                            22,
+                          ),
+                          child: Align(
+                            alignment: AlignmentDirectional.centerStart,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                AppText(
+                                  'Our menu',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize:
+                                        MediaQuery.sizeOf(context).width >= 800
+                                        ? 36
+                                        : 28,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                                SizedBox(height: 6),
+                                AppText(
+                                  'Made fresh, served with care.',
+                                  style: TextStyle(
+                                    color: MenuPalette.muted,
+                                    fontSize:
+                                        MediaQuery.sizeOf(context).width >= 800
+                                        ? 18
+                                        : 14,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  SliverToBoxAdapter(
+                    child: Center(
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 1600),
+                        child: Padding(
+                          padding: EdgeInsets.fromLTRB(
+                            layout.maxWidth >= 1400 ? 48 : 28,
+                            8,
+                            layout.maxWidth >= 1400 ? 48 : 28,
+                            20,
+                          ),
+                          child: TextField(
+                            controller: _searchController,
+                            onChanged: context.read<MenuCubit>().search,
+                            style: const TextStyle(color: Colors.white),
+                            decoration: InputDecoration(
+                              hintText: context.tr('Search meals'),
+                              hintStyle: const TextStyle(
+                                color: MenuPalette.muted,
                               ),
-                              title: AppText(
-                                state.error ??
-                                    'Showing saved menu while checking for updates.',
-                                style: TextStyle(color: Colors.white),
+                              prefixIcon: const Icon(
+                                Icons.search,
+                                color: MenuPalette.muted,
                               ),
-                              trailing: IconButton(
-                                onPressed: context.read<MenuCubit>().load,
-                                tooltip: context.tr('Refresh menu'),
-                                icon: const Icon(
-                                  Icons.refresh,
+                              filled: true,
+                              fillColor: MenuPalette.surface,
+                              contentPadding: EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical:
+                                    MediaQuery.sizeOf(context).width >= 800
+                                    ? 19
+                                    : 14,
+                              ),
+                              isDense: false,
+                              suffixIcon:
+                                  ValueListenableBuilder<TextEditingValue>(
+                                    valueListenable: _searchController,
+                                    builder: (_, value, _) => value.text.isEmpty
+                                        ? const SizedBox.shrink()
+                                        : IconButton(
+                                            tooltip: context.tr('Clear search'),
+                                            icon: const Icon(
+                                              Icons.close_rounded,
+                                              size: 18,
+                                            ),
+                                            onPressed: () {
+                                              _searchController.clear();
+                                              context.read<MenuCubit>().search(
+                                                '',
+                                              );
+                                            },
+                                          ),
+                                  ),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(14),
+                                borderSide: const BorderSide(
+                                  color: MenuPalette.border,
+                                ),
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(14),
+                                borderSide: const BorderSide(
+                                  color: MenuPalette.border,
+                                ),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(14),
+                                borderSide: const BorderSide(
                                   color: MenuPalette.gold,
                                 ),
                               ),
@@ -353,125 +310,264 @@ class _MenuViewState extends State<_MenuView> {
                       ),
                     ),
                   ),
-                const SliverToBoxAdapter(child: SizedBox(height: 16)),
-                if (state.status == MenuStatus.loading)
-                  const SliverFillRemaining(
-                    hasScrollBody: false,
-                    child: Center(
-                      child: CircularProgressIndicator(color: MenuPalette.gold),
+                  SliverToBoxAdapter(
+                    child: CategoryChips(
+                      selected: state.category,
+                      onSelected: context.read<MenuCubit>().selectCategory,
                     ),
-                  )
-                else if (state.status == MenuStatus.failure)
-                  SliverFillRemaining(
-                    hasScrollBody: false,
-                    child: MenuMessage(
-                      icon: Icons.wifi_off_outlined,
-                      message: state.error ?? 'Could not load meals.',
-                      actionLabel: 'Try again',
-                      onAction: context.read<MenuCubit>().load,
-                    ),
-                  )
-                else if (state.meals.isEmpty)
-                  SliverFillRemaining(
-                    hasScrollBody: false,
-                    child: MenuMessage(
-                      icon: Icons.restaurant_menu,
-                      message: state.query.isNotEmpty || state.category != null
-                          ? 'No meals match your search.'
-                          : state.isFromCache
-                          ? 'No saved products. Connect to the internet to download the menu.'
-                          : 'No products have been added to the menu yet.',
-                    ),
-                  )
-                else ...[
-                  SliverLayoutBuilder(
-                    builder: (context, constraints) {
-                      final width = constraints.crossAxisExtent;
-                      final sideInset = width > 1132
-                          ? (width - 1100) / 2
-                          : 16.0;
-                      final contentWidth = width - sideInset * 2;
-                      final columnCount = contentWidth < 320
-                          ? 1
-                          : contentWidth < 700
-                          ? 2
-                          : contentWidth < 1050
-                          ? 3
-                          : 4;
-                      final cardWidth =
-                          (contentWidth - (columnCount - 1) * 14) / columnCount;
-                      final textScale = MediaQuery.textScalerOf(
-                        context,
-                      ).scale(1).clamp(1.0, 2.0);
-                      final aspectRatio =
-                          (cardWidth < 120
-                              ? 0.68
-                              : cardWidth < 190
-                              ? 0.74
-                              : 0.82) /
-                          textScale;
-
-                      return SliverPadding(
-                        padding: EdgeInsets.fromLTRB(
-                          sideInset,
-                          0,
-                          sideInset,
-                          16,
-                        ),
-                        sliver: SliverGrid.builder(
-                          itemCount: state.meals.length,
-                          gridDelegate:
-                              SliverGridDelegateWithFixedCrossAxisCount(
-                                crossAxisCount: columnCount,
-                                mainAxisSpacing: 14,
-                                crossAxisSpacing: 14,
-                                childAspectRatio: aspectRatio,
-                              ),
-                          itemBuilder: (context, index) {
-                            final meal = state.meals[index];
-                            return MealCard(
-                              meal: meal,
-                              onTap: () => _openMeal(context, meal),
-                              onAdd: () {
-                                context.read<CartCubit>().addToCart(meal);
-                              },
-                            );
-                          },
-                        ),
-                      );
-                    },
                   ),
+                  if (state.isRefreshing && state.meals.isNotEmpty)
+                    const SliverToBoxAdapter(
+                      child: LinearProgressIndicator(
+                        color: MenuPalette.gold,
+                        minHeight: 2,
+                        backgroundColor: MenuPalette.border,
+                      ),
+                    ),
+                  if (state.isFromCache ||
+                      (state.error != null && state.meals.isNotEmpty))
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
+                        child: Center(
+                          child: ConstrainedBox(
+                            constraints: const BoxConstraints(maxWidth: 1600),
+                            child: Material(
+                              color: MenuPalette.surface,
+                              borderRadius: BorderRadius.circular(12),
+                              child: ListTile(
+                                dense: true,
+                                leading: const Icon(
+                                  Icons.wifi_off_outlined,
+                                  color: MenuPalette.gold,
+                                ),
+                                title: AppText(
+                                  state.error ??
+                                      'Showing saved menu while checking for updates.',
+                                  style: TextStyle(color: Colors.white),
+                                ),
+                                trailing: IconButton(
+                                  onPressed: context.read<MenuCubit>().load,
+                                  tooltip: context.tr('Refresh menu'),
+                                  icon: const Icon(
+                                    Icons.refresh,
+                                    color: MenuPalette.gold,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  const SliverToBoxAdapter(child: SizedBox(height: 16)),
+                  if (state.status == MenuStatus.loading)
+                    const SliverFillRemaining(
+                      hasScrollBody: false,
+                      child: Center(
+                        child: CircularProgressIndicator(
+                          color: MenuPalette.gold,
+                        ),
+                      ),
+                    )
+                  else if (state.status == MenuStatus.failure)
+                    SliverFillRemaining(
+                      hasScrollBody: false,
+                      child: MenuMessage(
+                        icon: Icons.wifi_off_outlined,
+                        message: state.error ?? 'Could not load meals.',
+                        actionLabel: 'Try again',
+                        onAction: context.read<MenuCubit>().load,
+                      ),
+                    )
+                  else if (state.meals.isEmpty)
+                    SliverFillRemaining(
+                      hasScrollBody: false,
+                      child: MenuMessage(
+                        icon: Icons.restaurant_menu,
+                        message:
+                            state.query.isNotEmpty || state.category != null
+                            ? 'No meals match your search.'
+                            : state.isFromCache
+                            ? 'No saved products. Connect to the internet to download the menu.'
+                            : 'No products have been added to the menu yet.',
+                      ),
+                    )
+                  else ...[
+                    SliverLayoutBuilder(
+                      builder: (context, constraints) {
+                        final width = constraints.crossAxisExtent;
+                        final maxGridWidth = 1600.0;
+                        final sideInset = width > maxGridWidth + 32
+                            ? (width - maxGridWidth) / 2
+                            : 16.0;
+                        final contentWidth = width - sideInset * 2;
+                        final columnCount = contentWidth < 320
+                            ? 1
+                            : contentWidth < 1100
+                            ? 2
+                            : contentWidth < 1550
+                            ? 3
+                            : 4;
+                        final cardWidth =
+                            (contentWidth -
+                                (columnCount - 1) *
+                                    (contentWidth >= 800 ? 22 : 14)) /
+                            columnCount;
+                        final textScale = MediaQuery.textScalerOf(
+                          context,
+                        ).scale(1).clamp(1.0, 2.0);
+                        final aspectRatio =
+                            (cardWidth < 120
+                                ? 0.68
+                                : cardWidth < 190
+                                ? 0.74
+                                : 0.82) /
+                            textScale;
+
+                        return SliverPadding(
+                          padding: EdgeInsets.fromLTRB(
+                            sideInset,
+                            0,
+                            sideInset,
+                            16,
+                          ),
+                          sliver: SliverGrid.builder(
+                            itemCount: state.meals.length,
+                            gridDelegate:
+                                SliverGridDelegateWithFixedCrossAxisCount(
+                                  crossAxisCount: columnCount,
+                                  mainAxisSpacing: contentWidth >= 800
+                                      ? 24
+                                      : 14,
+                                  crossAxisSpacing: contentWidth >= 800
+                                      ? 22
+                                      : 14,
+                                  childAspectRatio: aspectRatio,
+                                ),
+                            itemBuilder: (context, index) {
+                              final meal = state.meals[index];
+                              return MealCard(
+                                meal: meal,
+                                onTap: () => _openMeal(context, meal),
+                                onAdd: () {
+                                  context.read<CartCubit>().addToCart(meal);
+                                },
+                              );
+                            },
+                          ),
+                        );
+                      },
+                    ),
+                  ],
                 ],
-              ],
+              ),
+            );
+            final sideNavigation = AppNavigationRail(
+              items: _navigationItems(),
+              selectedIndex: 1,
+              onDestinationSelected: (index) =>
+                  _handleNavigation(context, index),
+              backgroundColor: MenuPalette.bg,
+              indicatorColor: MenuPalette.surface,
+              selectedColor: MenuPalette.gold,
+              unselectedColor: MenuPalette.muted,
+              width: 240,
+            );
+            final toolbarHeight = useSideNavigation ? 104.0 : 64.0;
+            final menuAppBar = SizedBox(
+              height: toolbarHeight,
+              child: AppBar(
+                backgroundColor: MenuPalette.bg,
+                foregroundColor: Colors.white,
+                automaticallyImplyLeading: false,
+                toolbarHeight: toolbarHeight,
+                titleSpacing: useSideNavigation ? 28 : 16,
+                title: Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 1600),
+                    child: _MenuHeader(onAdminTap: () => _openAdmin(context)),
+                  ),
+                ),
+              ),
+            );
+
+            if (useSideNavigation) {
+              return SafeArea(
+                child: Row(
+                  textDirection: Directionality.of(context),
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    sideNavigation,
+                    Expanded(
+                      child: Column(
+                        children: [
+                          menuAppBar,
+                          Expanded(child: menuContent),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }
+
+            return SafeArea(
+              child: Column(
+                children: [
+                  menuAppBar,
+                  Expanded(child: menuContent),
+                ],
+              ),
             );
           },
         ),
-        bottomNavigationBar: AppBottomNavigationBar(
-          items: const [
-            AppNavigationItem(label: 'Home', icon: Icons.home_outlined),
-            AppNavigationItem(
-              label: 'Menu',
-              icon: Icons.restaurant_menu_outlined,
-            ),
-            AppNavigationItem(
-              label: 'Orders',
-              icon: Icons.receipt_long_outlined,
-            ),
-            AppNavigationItem(label: 'Account', icon: Icons.person_outline),
-          ],
-          selectedIndex: 1,
-          onDestinationSelected: (index) {
-            if (index == 0) Navigator.of(context).pushNamed('/welcome');
-            if (index == 2) openCustomerOrders(context);
-            if (index == 3) _showCustomerDetails(context);
-          },
-          backgroundColor: MenuPalette.bg,
-          indicatorColor: MenuPalette.surface,
-          selectedColor: MenuPalette.gold,
-          unselectedColor: MenuPalette.muted,
-        ),
+        bottomNavigationBar: MediaQuery.sizeOf(context).width >= 1000
+            ? null
+            : AppBottomNavigationBar(
+                items: [
+                  ..._navigationItems(),
+                  const AppNavigationItem(
+                    label: 'Account',
+                    icon: Icons.person_outline,
+                  ),
+                ],
+                selectedIndex: 1,
+                onDestinationSelected: (index) =>
+                    _handleNavigation(context, index),
+                backgroundColor: MenuPalette.bg,
+                indicatorColor: MenuPalette.surface,
+                selectedColor: MenuPalette.gold,
+                unselectedColor: MenuPalette.muted,
+              ),
       ),
     );
+  }
+
+  List<AppNavigationItem> _navigationItems() => const [
+    AppNavigationItem(label: 'Home', icon: Icons.home_outlined),
+    AppNavigationItem(label: 'Menu', icon: Icons.restaurant_menu_outlined),
+    AppNavigationItem(label: 'Orders', icon: Icons.receipt_long_outlined),
+  ];
+
+  void _handleNavigation(BuildContext context, int index) {
+    if (index == 0) {
+      final customerCubit = context.read<CustomerOrderCubit?>();
+      if (customerCubit == null) {
+        Navigator.of(context).pushNamed('/welcome');
+        return;
+      }
+      Navigator.of(context).push(
+        MaterialPageRoute<void>(
+          builder: (_) => BlocProvider.value(
+            value: customerCubit,
+            child: const CustomerDetailsView(editMode: true),
+          ),
+        ),
+      );
+    }
+    if (index == 2) openCustomerOrders(context);
+    if (index == 3) _showCustomerDetails(context);
   }
 
   void _openMeal(BuildContext context, MealModel meal) {
@@ -545,75 +641,81 @@ class _MenuViewState extends State<_MenuView> {
 }
 
 class _MenuHeader extends StatelessWidget {
-  const _MenuHeader({required this.onProfileTap, required this.onAdminTap});
-  final VoidCallback onProfileTap;
+  const _MenuHeader({required this.onAdminTap});
   final VoidCallback onAdminTap;
 
   @override
-  Widget build(BuildContext context) => LayoutBuilder(
-    builder: (context, constraints) {
-      return Row(
-        children: [
-          const Icon(
-            Icons.restaurant_rounded,
-            color: MenuPalette.gold,
-            size: 25,
-          ),
-          const SizedBox(width: 9),
-          const Expanded(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'GoodFood',
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        if (constraints.maxWidth < 240) {
+          return const Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'Menu',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
-                  ),
+                  style: TextStyle(color: Colors.white, fontSize: 16),
                 ),
-                AppText(
-                  'RESTAURANT',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: MenuPalette.gold,
-                    fontSize: 9,
-                    letterSpacing: 1.2,
+              ),
+              _CartButton(),
+            ],
+          );
+        }
+
+        final large = constraints.maxWidth >= 800;
+        return Row(
+          children: [
+            Container(
+              width: 38,
+              height: 38,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(color: MenuPalette.gold, width: 1.2),
+              ),
+              child: const Icon(
+                Icons.person_outline,
+                color: MenuPalette.gold,
+                size: 23,
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'GoodFood',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
-                ),
-              ],
+                  AppText(
+                    'RESTAURANT',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: MenuPalette.gold,
+                      fontSize: large ? 17 : 9,
+                      letterSpacing: 1.2,
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-          if (constraints.maxWidth >= 340)
-            IconButton(
-              onPressed: null,
-              tooltip: context.tr('Notifications unavailable'),
-              icon: const Icon(Icons.notifications_none_rounded, size: 21),
-              constraints: const BoxConstraints.tightFor(width: 36, height: 40),
-              padding: EdgeInsets.zero,
-            ),
-          const _CartButton(),
-          const SizedBox(width: 6),
-          const LanguageToggle(),
-          IconButton(
-            onPressed: onProfileTap,
-            tooltip: context.tr('Account'),
-            icon: const Icon(
-              Icons.person_outline_rounded,
-              color: MenuPalette.muted,
-              size: 21,
-            ),
-            constraints: const BoxConstraints.tightFor(width: 32, height: 40),
-            padding: EdgeInsets.zero,
-          ),
-        ],
-      );
-    },
-  );
+            const LanguageToggle(),
+            const _CartButton(),
+          ],
+        );
+      },
+    );
+  }
 }
 
 class _CartButton extends StatelessWidget {
@@ -640,18 +742,21 @@ class _CartButton extends StatelessWidget {
               ),
             );
           },
-          tooltip: context.tr('Cart'),
+          tooltip: 'Cart',
           visualDensity: VisualDensity.compact,
-          constraints: const BoxConstraints.tightFor(width: 36, height: 40),
+          constraints: BoxConstraints.tightFor(
+            width: MediaQuery.sizeOf(context).width >= 800 ? 48 : 36,
+            height: MediaQuery.sizeOf(context).width >= 800 ? 48 : 40,
+          ),
           padding: EdgeInsets.zero,
           icon: const Icon(
             Icons.shopping_cart_outlined,
             color: MenuPalette.gold,
           ),
         ),
-        PositionedDirectional(
-          end: 0,
-          top: 0,
+        Positioned(
+          right: 0,
+          bottom: 0,
           child: BlocBuilder<CartCubit, CartState>(
             builder: (context, state) {
               final numOfItems = state.cartItems.fold<int>(
@@ -659,24 +764,7 @@ class _CartButton extends StatelessWidget {
                 (sum, item) => sum + item.quantity,
               );
 
-              if (numOfItems == 0) return const SizedBox.shrink();
-              return Container(
-                constraints: const BoxConstraints(minWidth: 15, minHeight: 15),
-                padding: const EdgeInsets.symmetric(horizontal: 3),
-                decoration: BoxDecoration(
-                  color: MenuPalette.gold,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Text(
-                  numOfItems > 99 ? '99+' : '$numOfItems',
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    color: Colors.black,
-                    fontSize: 9,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              );
+              return Text('$numOfItems', style: AppFonts.smallGoldTiltle);
             },
           ),
         ),

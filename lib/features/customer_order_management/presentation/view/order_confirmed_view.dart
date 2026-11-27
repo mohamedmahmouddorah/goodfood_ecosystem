@@ -94,29 +94,29 @@ class OrderConfirmedView extends StatelessWidget {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(
+                    Icon(
                       Icons.restaurant_menu,
                       color: AppColors.goldLight,
-                      size: 20,
+                      size: isWide ? 34 : 20,
                     ),
                     const SizedBox(width: 8),
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const AppText(
+                        AppText(
                           "GOODFOOD",
                           style: TextStyle(
                             color: Colors.white,
                             fontWeight: FontWeight.bold,
-                            fontSize: 16,
+                            fontSize: isWide ? 30 : 16,
                             letterSpacing: 1.2,
                           ),
                         ),
                         AppText(
                           "RESTAURANT",
                           style: AppFonts.smallGoldTiltle.copyWith(
-                            fontSize: 8,
+                            fontSize: isWide ? 13 : 8,
                             letterSpacing: 1.5,
                             fontWeight: FontWeight.bold,
                           ),
@@ -286,20 +286,19 @@ class OrderConfirmedView extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Expanded(
-                child: Row(
+                child: Wrap(
+                  spacing: 8,
+                  runSpacing: 4,
                   children: [
-                    Flexible(
-                      child: AppText(
-                        "Order $dispId",
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: isSmall ? 14 : 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                        overflow: TextOverflow.ellipsis,
+                    AppText(
+                      "Order $dispId",
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: isSmall ? 14 : 16,
+                        fontWeight: FontWeight.bold,
                       ),
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(width: 8),
                     Container(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 8,
@@ -461,8 +460,10 @@ class OrderConfirmedView extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          Wrap(
+            alignment: WrapAlignment.spaceBetween,
+            spacing: 12,
+            runSpacing: 4,
             children: [
               AppText(
                 "ORDER OVERVIEW",
@@ -603,20 +604,23 @@ class OrderConfirmedView extends StatelessWidget {
             ),
             elevation: 4,
           ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: const [
-              AppText(
-                "Track Your Order",
-                style: TextStyle(
-                  color: Colors.black,
-                  fontSize: 15,
-                  fontWeight: FontWeight.bold,
+          child: const FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                AppText(
+                  "Track Your Order",
+                  style: TextStyle(
+                    color: Colors.black,
+                    fontSize: 15,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
-              ),
-              SizedBox(width: 4),
-              Icon(Icons.chevron_right, color: Colors.black, size: 20),
-            ],
+                SizedBox(width: 4),
+                Icon(Icons.chevron_right, color: Colors.black, size: 20),
+              ],
+            ),
           ),
         ),
         const SizedBox(height: 12),

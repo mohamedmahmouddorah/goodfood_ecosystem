@@ -5,8 +5,17 @@ service cloud.firestore {
     // Admin = custom claim `admin: true` on the Firebase Auth token.
     // Costs 0 extra reads (unlike reading a users/{uid} doc inside the rule).
     function isAdmin() {
-      return request.auth != null && request.auth.token.admin == true;
-    }
+  return request.auth != null
+      && exists(
+        /databases/$(database)/documents/users/$(request.auth.uid)
+      )
+      && get(
+        /databases/$(database)/documents/users/$(request.auth.uid)
+      ).data.role == 'Admin'
+      && get(
+        /databases/$(database)/documents/users/$(request.auth.uid)
+      ).data.status == 'Active';
+}
 
     function validMeal() {
       let d = request.resource.data;

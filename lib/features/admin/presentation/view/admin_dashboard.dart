@@ -27,8 +27,18 @@ class AdminDashboard extends StatelessWidget {
       backgroundColor: adminBackground,
       appBar: AppBar(
         backgroundColor: adminBackground,
-        title: const Text('GoodFood'),
-        leading: const Icon(Icons.restaurant, color: MenuPalette.gold),
+        title: Text(
+          'GoodFood',
+          style: TextStyle(
+            fontSize: MediaQuery.sizeOf(context).width >= 800 ? 32 : 20,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        leading: Icon(
+          Icons.restaurant,
+          color: MenuPalette.gold,
+          size: MediaQuery.sizeOf(context).width >= 800 ? 34 : 24,
+        ),
         actions: const [LanguageToggle(), AdminLogoutButton()],
       ),
       body: AdminPageWidth(

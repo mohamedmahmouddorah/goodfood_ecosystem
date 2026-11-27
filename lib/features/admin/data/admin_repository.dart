@@ -29,51 +29,45 @@ class AdminRepository implements AdminDataSource {
   Stream<String?> watchClaimedAdmin({bool refreshToken = false}) {
     var refreshPending = refreshToken;
     return auth.idTokenChanges().asyncMap((user) {
-      // A forced refresh can itself emit an ID token event. Consume it once.
       final forceRefresh = refreshPending;
       refreshPending = false;
-      return _checkClaim(user, forceRefresh);
+      return _checkAdmin(user, forceRefresh);
     });
   }
 
-  Future<String?> _checkClaim(User? user, bool forceRefresh) async {
+  Future<String?> _checkAdmin(User? user, bool forceRefresh) async {
     if (user == null || user.isAnonymous) {
       _log(
         'uid=${user?.uid} result=${user == null ? 'signed-out' : 'anonymous'}',
       );
       return null;
     }
+
     final uid = user.uid;
+
     try {
       final token = await user.getIdTokenResult(forceRefresh);
-      final hasClaim = token.claims?['admin'] == true;
-      final sameUser = auth.currentUser?.uid == uid;
-      final result = !sameUser
-          ? 'identity-changed'
-          : hasClaim
-          ? 'claim-verified'
-          : 'missing-admin-claim';
-      _log('uid=$uid adminClaim=$hasClaim result=$result');
-      if (_diagnostics && sameUser && !hasClaim) {
-        unawaited(_inspectRejectedProfile(uid));
+      if (auth.currentUser?.uid != uid || token.claims?['admin'] != true) {
+        return null;
       }
-      return hasClaim && sameUser ? uid : null;
-    } on FirebaseAuthException catch (error) {
-      _log('uid=$uid result=token-error code=${error.code}');
-      rethrow;
-    }
-  }
-
-  // This read provides context for a claim rejection and never grants access.
-  Future<void> _inspectRejectedProfile(String uid) async {
-    try {
       final profile = await store
           .collection('users')
           .doc(uid)
           .get(const GetOptions(source: Source.server));
-      if (auth.currentUser?.uid == uid) _profileResult(profile);
+
+      if (auth.currentUser?.uid != uid) {
+        _log('uid=$uid result=identity-changed');
+        return null;
+      }
+
+      final result = _profileResult(profile);
+
+      _log('uid=$uid result=$result');
+
+      return result == 'profile-verified' ? uid : null;
     } catch (error) {
       _logProfileError(uid, error);
+      rethrow;
     }
   }
 
@@ -81,6 +75,7 @@ class AdminRepository implements AdminDataSource {
     final data = profile.data();
     final role = data?['role'];
     final status = data?['status'];
+
     final result = data == null
         ? 'profile-missing'
         : role != 'Admin'
@@ -88,25 +83,31 @@ class AdminRepository implements AdminDataSource {
         : status != 'Active'
         ? 'status-not-active'
         : 'profile-verified';
+
     if (_diagnostics) {
       final safeRole = switch (role) {
         'Admin' || 'Chef' || 'Customer' || null => role,
         _ => 'unrecognized',
       };
+
       final safeStatus = switch (status) {
         'Active' || 'Inactive' || null => status,
         _ => 'unrecognized',
       };
+
       _log(
         'uid=${profile.id} role=$safeRole status=$safeStatus profile=$result',
       );
     }
+
     return result;
   }
 
   void _logProfileError(String uid, Object error) {
     if (!_diagnostics) return;
+
     final code = error is FirebaseException ? error.code : 'unknown';
+
     _log('uid=$uid result=profile-read-error code=$code');
   }
 
@@ -122,9 +123,11 @@ class AdminRepository implements AdminDataSource {
       .map((profile) {
         final data = profile.data();
         final name = data?['name'];
+
         if (_profileResult(profile) != 'profile-verified') {
           return null;
         }
+
         return name is String ? name.trim() : '';
       })
       .handleError((Object error, StackTrace stack) {

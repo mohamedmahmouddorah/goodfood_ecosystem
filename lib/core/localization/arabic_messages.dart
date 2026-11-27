@@ -398,6 +398,17 @@ const arabicMessages = <String, String>{
       'أدخل رابط صورة صالحًا يبدأ بـ http:// أو https://.',
   'Empty': 'فارغ',
   'دي سكرينة جديدة مش مغير النص يصيع': 'مساحة عمل الطاهي',
+  'Reset your password': 'إعادة تعيين كلمة المرور',
+  'Enter the email address associated with your account. We will send you a password reset link.':
+      'أدخل البريد الإلكتروني المرتبط بحسابك وسنرسل رابط إعادة تعيين كلمة المرور.',
+  'Email': 'البريد الإلكتروني',
+  'Email is required.': 'البريد الإلكتروني مطلوب.',
+  'Please enter a valid email address.': 'أدخل بريدًا إلكترونيًا صالحًا.',
+  'Send reset link': 'إرسال رابط إعادة التعيين',
+  'If an account exists for this email, a reset link will be sent.':
+      'إذا كان هناك حساب مرتبط بهذا البريد، فسيتم إرسال رابط إعادة التعيين.',
+  'We could not process your request. Check your connection and try again.':
+      'تعذّر تنفيذ الطلب. تحقق من اتصالك بالإنترنت وحاول مرة أخرى.',
 };
 
 const arabicTemplates = <String, String>{

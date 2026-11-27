@@ -122,8 +122,12 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    await tester.tap(find.text('#GF-READY'));
+    final readyCard = find.text('#GF-READY');
+    await tester.ensureVisible(readyCard);
     await tester.pumpAndSettle();
+    await tester.tap(readyCard);
+    await tester.pumpAndSettle();
+    expect(find.text('Order Details'), findsOneWidget);
 
     expect(find.text(meal.mealName), findsOneWidget);
     expect(find.text('Qty: 3'), findsOneWidget);

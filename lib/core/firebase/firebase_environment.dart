@@ -62,6 +62,6 @@ abstract final class FirebaseEnvironment {
         automaticHostMapping: false,
       );
     }
-    store.settings = Settings(persistenceEnabled: !useEmulators);
+    store.settings = const Settings(persistenceEnabled: false);
   }
 }

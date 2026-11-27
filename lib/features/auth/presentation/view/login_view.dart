@@ -120,8 +120,13 @@ class LoginView extends StatelessWidget {
           ),
           child: Padding(
             padding: const EdgeInsets.only(top: 128.0),
-            child: SingleChildScrollView(
-              child: Column(
+            child: LayoutBuilder(
+              builder: (context, constraints) => SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 480),
+                    child: Column(
                 children: [
                   SvgPicture.asset(
                     "${AppAssets.path}logo.svg",
@@ -147,10 +152,7 @@ class LoginView extends StatelessWidget {
                     style: AppFonts.subTitle.copyWith(fontSize: 16),
                   ),
                   Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16.0,
-                      vertical: 28,
-                    ),
+                    padding: const EdgeInsets.symmetric(vertical: 28),
                     child: Form(
                       key: formKey,
                       child: Column(
@@ -178,7 +180,7 @@ class LoginView extends StatelessWidget {
                               }
                             },
                             style: ElevatedButton.styleFrom(
-                              minimumSize: Size(350, 55),
+                              minimumSize: const Size(double.infinity, 55),
                               backgroundColor: AppColors.goldDark,
                             ),
 
@@ -205,13 +207,16 @@ class LoginView extends StatelessWidget {
                     ),
                   ),
                   TextButton(
-                    onPressed: () {},
+                    onPressed: () => Navigator.pushNamed(context, '/forgot_password'),
                     child: AppText(
                       "Forgot Password?",
                       style: AppFonts.subTitle,
                     ),
                   ),
                 ],
+                    ),
+                  ),
+                ),
               ),
             ),
           ),

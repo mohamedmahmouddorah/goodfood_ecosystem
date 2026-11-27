@@ -1,15 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'core/firebase/firebase_environment.dart';
 import 'core/localization/app_locale_cubit.dart';
 import 'core/localization/goodfood_localizations.dart';
-import 'core/firebase/firebase_environment.dart';
 
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:goodfood_ecosystem/features/admin/presentation/view/admin_view.dart';
 import 'package:goodfood_ecosystem/features/auth/presentation/view/login_view.dart';
+import 'package:goodfood_ecosystem/features/auth/presentation/view/forgot_password_view.dart';
 import 'package:goodfood_ecosystem/features/auth/presentation/view/role_view.dart';
 import 'package:goodfood_ecosystem/features/auth/presentation/view/splash_view.dart';
 import 'package:goodfood_ecosystem/features/auth/presentation/view/welcome_view.dart';
@@ -127,6 +128,7 @@ class MyApp extends StatelessWidget {
         '/admin': (context) => AdminView(menu: repository),
         '/chef': (context) => ChefView(),
         '/login': (context) => LoginView(),
+        '/forgot_password': (context) => const ForgotPasswordView(),
         '/welcome': (context) => WelcomeView(),
         '/role_selection': (context) => RoleView(),
         '/customer_details': (context) => MultiBlocProvider(
