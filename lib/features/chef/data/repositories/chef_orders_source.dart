@@ -7,13 +7,16 @@ class ChefOrderQueues {
     required List<OrderModel> incoming,
     required List<OrderModel> active,
     required List<OrderModel> ready,
+    List<OrderModel> history = const [],
   }) : incoming = List.unmodifiable(incoming),
        active = List.unmodifiable(active),
-       ready = List.unmodifiable(ready);
+       ready = List.unmodifiable(ready),
+       history = List.unmodifiable(history);
   final ChefIdentity chef;
   final List<OrderModel> incoming;
   final List<OrderModel> active;
   final List<OrderModel> ready;
+  final List<OrderModel> history;
 }
 
 class ChefOrderConflict implements Exception {

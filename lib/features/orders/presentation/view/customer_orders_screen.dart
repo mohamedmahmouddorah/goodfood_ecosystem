@@ -11,6 +11,7 @@ import '../view_models/orders_cubit.dart';
 import '../view_models/orders_state.dart';
 import '../widgets/order_card.dart';
 import '../widgets/orders_palette.dart';
+import 'customer_order_details_screen.dart';
 
 /// Pass customer-scoped IDs from the session, or inject an existing data stream.
 /// No IDs means no orders; this screen never queries all restaurant orders.
@@ -21,12 +22,20 @@ class CustomerOrdersScreen extends StatelessWidget {
     this.loadOrders,
     this.onOrderTap,
     this.onNotificationsTap,
+    this.watchCustomerId,
+    this.cancelOrder,
+    this.onRateMeal,
   });
 
   final List<String> orderIds;
   final OrdersLoader? loadOrders;
   final ValueChanged<OrderModel>? onOrderTap;
   final VoidCallback? onNotificationsTap;
+  final Stream<String?> Function()? watchCustomerId;
+  final Future<void> Function(String, {String? reason})? cancelOrder;
+
+  /// Open the rating screen with the Firestore order ID and saved meal ID.
+  final void Function(String orderId, String mealId)? onRateMeal;
 
   @override
   Widget build(BuildContext context) {
@@ -41,9 +50,29 @@ class CustomerOrdersScreen extends StatelessWidget {
               ).watchOrders(orderIds);
             },
       )..load(),
-      child: _OrdersView(
-        onOrderTap: onOrderTap,
-        onNotificationsTap: onNotificationsTap,
+      child: Builder(
+        builder: (context) => _OrdersView(
+          onOrderTap:
+              onOrderTap ??
+              (order) {
+                final cubit = context.read<OrdersCubit>();
+                final customerIds = watchCustomerId?.call();
+                Navigator.of(context).push<void>(
+                  MaterialPageRoute(
+                    builder: (_) => BlocProvider.value(
+                      value: cubit,
+                      child: CustomerOrderDetailsScreen(
+                        orderId: order.docId,
+                        customerIds: customerIds,
+                        cancelOrder: cancelOrder,
+                        onRateMeal: onRateMeal,
+                      ),
+                    ),
+                  ),
+                );
+              },
+          onNotificationsTap: onNotificationsTap,
+        ),
       ),
     );
   }

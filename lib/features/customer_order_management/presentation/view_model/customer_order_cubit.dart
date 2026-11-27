@@ -15,7 +15,7 @@ class CustomerOrderCubit extends Cubit<CustomerOrderState> {
     FirebaseFirestore? store,
     CustomerOrderTracking? tracking,
     FirebaseAuth? auth,
-    bool secureCustomerFlow = FirebaseEnvironment.useEmulators,
+    bool secureCustomerFlow = FirebaseEnvironment.useOwnedCustomerOrders,
   }) : store = store ?? FirebaseEnvironment.store,
        _tracking = tracking,
        _auth = auth,

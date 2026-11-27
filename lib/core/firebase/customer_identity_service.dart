@@ -1,6 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 
-/// Called only by the opt-in emulator customer flow. Staff sessions are reused.
+/// Restores the Auth session or signs in anonymously for owned customer orders.
 class CustomerIdentityService {
   CustomerIdentityService(this.auth);
   final FirebaseAuth auth;

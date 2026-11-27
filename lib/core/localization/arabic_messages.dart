@@ -21,6 +21,33 @@ const arabicMessages = <String, String>{
   'All statuses': 'كل الحالات',
   'View Details': 'عرض التفاصيل',
   'Order Details': 'تفاصيل الطلب',
+  'Order Items': 'عناصر الطلب',
+  'Rate Meal': 'قيّم الوجبة',
+  'Cancel Order': 'إلغاء الطلب',
+  'Cancel Order?': 'هل تريد إلغاء الطلب؟',
+  'Are you sure you want to cancel this order? This action cannot be undone.':
+      'هل أنت متأكد من إلغاء هذا الطلب؟ لا يمكن التراجع عن هذا الإجراء.',
+  'Keep Order': 'الإبقاء على الطلب',
+  'Yes, Cancel Order': 'نعم، إلغاء الطلب',
+  'Order cancelled successfully.': 'تم إلغاء الطلب بنجاح.',
+  'Reason for cancellation (Optional)': 'سبب الإلغاء (اختياري)',
+  'Tell us why you want to cancel...': 'قول لنا ليه عايز تلغي الطلب...',
+  'Cancellation reason': 'سبب الإلغاء',
+  'Cancellation reason must be 200 characters or fewer.':
+      'سبب الإلغاء لازم يكون ٢٠٠ حرف أو أقل.',
+  'This order is unavailable.': 'هذا الطلب غير متاح.',
+  'Sign in to cancel this order.': 'سجّل الدخول لإلغاء هذا الطلب.',
+  'Only the customer who placed this order can cancel it.':
+      'يمكن للعميل الذي قدّم هذا الطلب فقط إلغاؤه.',
+  'This order has already been accepted or is no longer pending.':
+      'تم قبول هذا الطلب بالفعل أو لم يعد قيد الانتظار.',
+  'You do not have permission to cancel this order.':
+      'ليس لديك إذن بإلغاء هذا الطلب.',
+  'Check your connection and try again.': 'تحقّق من الاتصال وحاول مرة أخرى.',
+  'The order changed. Check its status and try again.':
+      'تغيّر الطلب. تحقّق من حالته وحاول مرة أخرى.',
+  'Unable to cancel this order. Please try again.':
+      'تعذّر إلغاء هذا الطلب. حاول مرة أخرى.',
   'Customer ID': 'معرّف العميل',
   'Guests': 'عدد الضيوف',
   'Accepted at': 'وقت القبول',
@@ -211,6 +238,9 @@ const arabicMessages = <String, String>{
   'Freshly made. Follow every step.': 'طازج التحضير. تابع كل خطوة.',
   'Active Orders': 'الطلبات الحالية',
   'Order History': 'سجل الطلبات',
+  'Orders you have finished preparing': 'الطلبات اللي خلّصت تجهيزها',
+  'Your completed kitchen orders will appear here.':
+      'الطلبات اللي خلّصت تجهيزها هتظهر هنا.',
   'Pending': 'قيد الانتظار',
   'Ready': 'جاهز',
   'Delivered': 'تم التسليم',

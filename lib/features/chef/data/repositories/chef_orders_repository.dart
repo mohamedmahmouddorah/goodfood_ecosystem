@@ -21,10 +21,13 @@ class ChefOrdersRepository implements ChefOrdersSource {
       if (event is ErrorNotification) {
         return Stream<ChefOrderQueues>.error(event.error, event.stackTrace);
       }
-      if (event is! DataNotification<ChefIdentity>) {
+      if (event is! DataNotification<ChefIdentity?>) {
         return const Stream<ChefOrderQueues>.empty();
       }
       final chef = event.value;
+      if (chef == null) {
+        return Stream<ChefOrderQueues>.error(const ChefAccessDenied());
+      }
       return Rx.combineLatest2<
         QuerySnapshot<Map<String, dynamic>>,
         QuerySnapshot<Map<String, dynamic>>,
@@ -62,11 +65,26 @@ class ChefOrdersRepository implements ChefOrdersSource {
                     a.readyAt ?? a.createdAt,
                   ),
                 );
+          final history =
+              mine
+                  .where(
+                    (order) =>
+                        order.status == OrderStatus.ready ||
+                        order.status == OrderStatus.delivered ||
+                        order.status == OrderStatus.canceled,
+                  )
+                  .toList()
+                ..sort(
+                  (a, b) => (b.readyAt ?? b.createdAt).compareTo(
+                    a.readyAt ?? a.createdAt,
+                  ),
+                );
           return ChefOrderQueues(
             chef: chef,
             incoming: incoming,
             active: active,
             ready: ready,
+            history: history,
           );
         },
       );

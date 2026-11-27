@@ -7,6 +7,8 @@ import '../../firebase_options.dart';
 /// Opt-in local mode. A demo project ID prevents accidental production access.
 abstract final class FirebaseEnvironment {
   static const useEmulators = bool.fromEnvironment('USE_FIREBASE_EMULATORS');
+  static const useOwnedCustomerOrders =
+      useEmulators || bool.fromEnvironment('USE_OWNED_CUSTOMER_ORDERS');
   static const emulatorHost = String.fromEnvironment(
     'FIREBASE_EMULATOR_HOST',
     defaultValue: '127.0.0.1',

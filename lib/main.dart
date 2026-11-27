@@ -23,7 +23,6 @@ import 'package:goodfood_ecosystem/features/customer_order_management/presentati
 import 'package:goodfood_ecosystem/features/customer_order_management/presentation/view/order_confirmed_view.dart';
 import 'package:goodfood_ecosystem/features/customer_order_management/presentation/view_model/cart_cubit.dart';
 import 'package:goodfood_ecosystem/features/customer_order_management/presentation/view_model/customer_order_cubit.dart';
-import 'package:goodfood_ecosystem/features/customer_order_management/presentation/widgets/cart_item.dart';
 import 'package:goodfood_ecosystem/features/menu/presentation/view_model/menu_cubit.dart';
 import 'package:hive_flutter/adapters.dart';
 
@@ -66,7 +65,11 @@ void main() async {
   runApp(
     MultiBlocProvider(
       providers: [
-        BlocProvider(create: (context) => AuthCubit()),
+        BlocProvider(
+          create: (context) => AuthCubit(
+            secureCustomerFlow: FirebaseEnvironment.useOwnedCustomerOrders,
+          ),
+        ),
         BlocProvider(create: (_) => localeCubit),
       ],
       child: MyApp(repository: repository, cartRepo: cartRepositry),
@@ -106,14 +109,16 @@ class MyApp extends StatelessWidget {
       routes: {
         '/orders': (context) {
           final arguments = ModalRoute.of(context)?.settings.arguments;
+          final orders = CustomerOrdersRepository(FirebaseEnvironment.store);
+          final auth = FirebaseEnvironment.auth;
           return CustomerOrdersScreen(
-            loadOrders: () => FirebaseEnvironment.useEmulators
-                ? CustomerOrdersRepository(
-                    FirebaseEnvironment.store,
-                  ).watchSignedInCustomerOrders(FirebaseEnvironment.auth)
-                : CustomerOrdersRepository(
-                    FirebaseEnvironment.store,
-                  ).watchTrackedOrders(
+            watchCustomerId: () =>
+                auth.authStateChanges().map((user) => user?.uid),
+            cancelOrder: (id, {reason}) =>
+                orders.cancelOrder(id, auth, reason: reason),
+            loadOrders: () => FirebaseEnvironment.useOwnedCustomerOrders
+                ? orders.watchSignedInCustomerOrders(auth)
+                : orders.watchTrackedOrders(
                     tracking: CustomerOrderTracking.forCurrentDevice(),
                     extraIds: arguments is List<String> ? arguments : const [],
                   ),

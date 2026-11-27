@@ -24,6 +24,16 @@ class ChefOrdersState {
   final ChefNotice? notice;
   final int noticeId;
 
+  String? get noticeMessage => switch (notice) {
+    ChefNotice.accepted => 'Order accepted. Preparation started.',
+    ChefNotice.ready => 'Order marked Ready.',
+    ChefNotice.conflict =>
+      'This order is no longer available. The queue has been refreshed.',
+    ChefNotice.error =>
+      'Could not update the order. Check your connection and permissions.',
+    null => null,
+  };
+
   List<OrderModel> get visibleOrders => switch (section) {
     ChefOrdersSection.incoming => queues?.incoming ?? const [],
     ChefOrdersSection.active => queues?.active ?? const [],

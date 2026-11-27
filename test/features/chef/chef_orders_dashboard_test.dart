@@ -62,13 +62,21 @@ class ChefFixtureSource implements ChefOrdersSource {
     accepted++;
     await hold?.future;
     if (conflict) throw const ChefOrderConflict();
-    final acceptedOrder = current.incoming.single
-      ..status = OrderStatus.preparing;
+    final pendingOrder = current.incoming.firstWhere(
+      (order) => order.docId == id,
+    );
+    final acceptedOrder = OrderModel.fromMap({
+      ...pendingOrder.toMap(),
+      'status': OrderStatus.preparing.name,
+      'acceptedByChefId': current.chef.uid,
+      'acceptedByChefName': current.chef.name,
+    }, pendingOrder.meals)..docId = id;
     current = ChefOrderQueues(
       chef: current.chef,
-      incoming: [],
+      incoming: current.incoming.where((order) => order.docId != id).toList(),
       active: [acceptedOrder],
       ready: current.ready,
+      history: current.history,
     );
     changes.add(current);
   }
@@ -82,6 +90,7 @@ class ChefFixtureSource implements ChefOrdersSource {
       incoming: [],
       active: [],
       ready: [readyOrder],
+      history: [readyOrder, ...current.history],
     );
     changes.add(current);
   }
@@ -156,6 +165,143 @@ void main() {
     expect(cubit.state.visibleOrders, isEmpty);
   });
 
+  testWidgets(
+    'history updates from the dashboard and opens read-only details',
+    (tester) async {
+      tester.view.physicalSize = const Size(320, 720);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      final source = ChefFixtureSource();
+      addTearDown(source.changes.close);
+      await tester.pumpWidget(MaterialApp(home: ChefView(source: source)));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byTooltip('Order History'));
+      await tester.pumpAndSettle();
+      expect(find.text('No order history yet'), findsOneWidget);
+
+      await source.accept('NEW-1');
+      await tester.pumpAndSettle();
+      expect(find.text('#NEW-1'), findsNothing);
+      await source.markReady('NEW-1');
+      await tester.pumpAndSettle();
+      expect(find.text('#NEW-1'), findsOneWidget);
+      expect(find.text('Actual meal field'), findsNothing);
+      expect(find.text('2 items'), findsOneWidget);
+      await tester.tap(find.text('#NEW-1'));
+      await tester.pumpAndSettle();
+      expect(find.text('Order Details'), findsOneWidget);
+      expect(find.text('Actual meal field'), findsOneWidget);
+      expect(find.byType(FilledButton), findsNothing);
+      expect(source.watches, 1);
+      await tester.pageBack();
+      await tester.pumpAndSettle();
+
+      source.changes.addError(const ChefAccessDenied());
+      await tester.pumpAndSettle();
+      expect(
+        find.text('An active, signed-in chef account is required.'),
+        findsOneWidget,
+      );
+      expect(find.text('#NEW-1'), findsNothing);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets('details follows the selected order from pending to ready', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(320, 720);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final source = ChefFixtureSource()..hold = Completer<void>();
+    addTearDown(source.changes.close);
+    final second = order('NEW-2', OrderStatus.pending);
+    final secondOrder = OrderModel.fromMap({
+      ...second.toMap(),
+      'table_no': 9,
+      'client_name': 'Second customer',
+    }, second.meals)..docId = second.docId;
+    source.current = ChefOrderQueues(
+      chef: source.current.chef,
+      incoming: [...source.current.incoming, secondOrder],
+      active: [],
+      ready: [],
+    );
+    await tester.pumpWidget(MaterialApp(home: ChefView(source: source)));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('#NEW-1'));
+    await tester.pumpAndSettle();
+    expect(find.text('Order Details'), findsOneWidget);
+    expect(find.text('Table 5'), findsOneWidget);
+    expect(find.text('Second customer'), findsNothing);
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+
+    final secondCard = find.text('#NEW-2');
+    await tester.scrollUntilVisible(
+      secondCard,
+      150,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.tap(secondCard);
+    await tester.pumpAndSettle();
+    expect(find.text('Table 9'), findsOneWidget);
+    expect(find.text('Second customer'), findsOneWidget);
+    expect(find.text('Actual meal field'), findsOneWidget);
+    expect(find.text('×2'), findsOneWidget);
+
+    await tester.tap(find.text('Accept Order'));
+    await tester.pump();
+    expect(
+      tester.widget<FilledButton>(find.byType(FilledButton)).onPressed,
+      isNull,
+    );
+    source.hold!.complete();
+    await tester.pumpAndSettle();
+    expect(find.text('Preparing'), findsOneWidget);
+    expect(find.text('Assigned chef'), findsOneWidget);
+    expect(find.text('Chef A'), findsOneWidget);
+    await tester.tap(find.text('Mark Ready'));
+    await tester.pumpAndSettle();
+    expect(find.text('Ready'), findsOneWidget);
+    expect(find.byType(FilledButton), findsNothing);
+    expect(source.watches, 1);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('details removes actions when the order leaves the chef queues', (
+    tester,
+  ) async {
+    final source = ChefFixtureSource();
+    addTearDown(source.changes.close);
+    await tester.pumpWidget(MaterialApp(home: ChefView(source: source)));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('#NEW-1'));
+    await tester.pumpAndSettle();
+    expect(find.text('Accept Order'), findsOneWidget);
+
+    // Both cancellation and acceptance by another chef remove the order
+    // from the current chef's queues.
+    source.changes.add(
+      ChefOrderQueues(
+        chef: source.current.chef,
+        incoming: [],
+        active: [],
+        ready: [],
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('This order is no longer available.'), findsOneWidget);
+    expect(find.byType(FilledButton), findsNothing);
+    expect(source.accepted, 0);
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+    expect(find.text('Chef Dashboard'), findsOneWidget);
+  });
+
   for (final language in ['ar', 'en']) {
     for (final width in [320.0, 390.0, 1100.0]) {
       testWidgets('chef workflow UI $language fits $width', (tester) async {
@@ -185,6 +331,7 @@ void main() {
         await tester.ensureVisible(accept);
         await tester.tap(accept);
         await tester.pumpAndSettle();
+        expect(find.byType(BackButton), findsNothing);
         await tester.tap(
           find.text(language == 'ar' ? 'طلباتي الحالية' : 'My Active Orders'),
         );
@@ -196,6 +343,7 @@ void main() {
         await tester.ensureVisible(markReady);
         await tester.tap(markReady);
         await tester.pumpAndSettle();
+        expect(find.byType(BackButton), findsNothing);
         expect(source.accepted, 1);
         expect(source.ready, 1);
         expect(tester.takeException(), isNull);
