@@ -94,29 +94,29 @@ class OrderConfirmedView extends StatelessWidget {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(
+                     Icon(
                       Icons.restaurant_menu,
                       color: AppColors.goldLight,
-                      size: 20,
+                      size: isWide ? 34 : 20,
                     ),
                     const SizedBox(width: 8),
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const AppText(
+                         AppText(
                           "GOODFOOD",
                           style: TextStyle(
                             color: Colors.white,
                             fontWeight: FontWeight.bold,
-                            fontSize: 16,
+                            fontSize: isWide ? 30 : 16,
                             letterSpacing: 1.2,
                           ),
                         ),
                         AppText(
                           "RESTAURANT",
                           style: AppFonts.smallGoldTiltle.copyWith(
-                            fontSize: 8,
+                            fontSize: isWide ? 13 : 8,
                             letterSpacing: 1.5,
                             fontWeight: FontWeight.bold,
                           ),

@@ -29,13 +29,15 @@ class MealCard extends StatelessWidget {
         ),
         child: InkWell(
           onTap: onTap,
-          child: Padding(
-            padding: const EdgeInsets.all(10),
-            child: LayoutBuilder(
+          child: LayoutBuilder(
               builder: (context, constraints) {
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
+                final isLargeCard = constraints.maxWidth >= 360;
+                final cardPadding = constraints.maxWidth >= 420 ? 18.0 : 14.0;
+                return Padding(
+                  padding: EdgeInsets.all(cardPadding),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
                     Expanded(
                       child: Stack(
                         fit: StackFit.expand,
@@ -84,7 +86,7 @@ class MealCard extends StatelessWidget {
                                           : 'Unavailable',
                                       style: const TextStyle(
                                         color: Colors.white,
-                                        fontSize: 9,
+                                        fontSize: 12,
                                       ),
                                     ),
                                   ],
@@ -99,9 +101,9 @@ class MealCard extends StatelessWidget {
                       meal.name,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: Colors.white,
-                        fontSize: 15,
+                        fontSize: isLargeCard ? 22 : constraints.maxWidth >= 300 ? 19 : 15,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -112,10 +114,10 @@ class MealCard extends StatelessWidget {
                         meal.description,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: MenuPalette.muted,
-                          fontSize: 12,
-                          height: 1.35,
+                          fontSize: isLargeCard ? 16 : constraints.maxWidth >= 300 ? 14 : 12,
+                          height: 1.4,
                         ),
                       ),
                       const SizedBox(height: 6),
@@ -128,9 +130,9 @@ class MealCard extends StatelessWidget {
                             fit: BoxFit.scaleDown,
                             child: AppText(
                               '\$${meal.price.toStringAsFixed(2)}',
-                              style: const TextStyle(
+                              style: TextStyle(
                                 color: MenuPalette.gold,
-                                fontSize: 14,
+                                fontSize: isLargeCard ? 21 : constraints.maxWidth >= 300 ? 18 : 14,
                               ),
                             ),
                           ),
@@ -142,8 +144,8 @@ class MealCard extends StatelessWidget {
                             onTap: meal.isAvailable ? onAdd : null,
                             customBorder: const CircleBorder(),
                             child: Ink(
-                              width: constraints.maxWidth < 120 ? 26 : 30,
-                              height: constraints.maxWidth < 120 ? 26 : 30,
+                              width: isLargeCard ? 48 : constraints.maxWidth >= 300 ? 42 : constraints.maxWidth < 120 ? 26 : 34,
+                              height: isLargeCard ? 48 : constraints.maxWidth >= 300 ? 42 : constraints.maxWidth < 120 ? 26 : 34,
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
                                 color: meal.isAvailable
@@ -153,18 +155,18 @@ class MealCard extends StatelessWidget {
                               child: Icon(
                                 meal.isAvailable ? Icons.add : Icons.remove,
                                 color: Colors.black,
-                                size: constraints.maxWidth < 120 ? 17 : 20,
+                                size: isLargeCard ? 28 : constraints.maxWidth >= 300 ? 25 : constraints.maxWidth < 120 ? 17 : 22,
                               ),
                             ),
                           ),
                         ),
                       ],
                     ),
-                  ],
+                    ],
+                  ),
                 );
               },
             ),
-          ),
         ),
       ),
     );

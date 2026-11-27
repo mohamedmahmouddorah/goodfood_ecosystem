@@ -22,6 +22,7 @@ import '../widgets/category_chips.dart';
 import '../widgets/meal_card.dart';
 import '../widgets/menu_message.dart';
 import '../widgets/menu_palette.dart';
+import '../../../customer_order_management/presentation/view/customer_details_view.dart';
 import 'meal_details_screen.dart';
 import 'menu_management_screen.dart';
 
@@ -181,31 +182,25 @@ class _MenuViewState extends State<_MenuView> {
       },
       child: Scaffold(
         backgroundColor: MenuPalette.bg,
-        appBar: AppBar(
-          backgroundColor: MenuPalette.bg,
-          foregroundColor: Colors.white,
-          automaticallyImplyLeading: false,
-          titleSpacing: 16,
-          title: Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 1100),
-              child: _MenuHeader(
-                onProfileTap: () => _showCustomerDetails(context),
-                onAdminTap: () => _openAdmin(context),
-              ),
-            ),
-          ),
-        ),
-        body: BlocBuilder<MenuCubit, MenuState>(
-          builder: (context, state) {
+        appBar: null,
+        body: LayoutBuilder(
+          builder: (context, layout) {
+            final useSideNavigation = layout.maxWidth >= 800;
+            final menuContent = BlocBuilder<MenuCubit, MenuState>(
+                builder: (context, state) {
             return CustomScrollView(
               slivers: [
                 SliverToBoxAdapter(
                   child: Center(
                     child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 1100),
-                      child: const Padding(
-                        padding: EdgeInsets.fromLTRB(16, 20, 16, 18),
+                      constraints: const BoxConstraints(maxWidth: 1600),
+                      child: Padding(
+                        padding: EdgeInsets.fromLTRB(
+                          layout.maxWidth >= 1400 ? 48 : 28,
+                          layout.maxWidth >= 1400 ? 40 : 28,
+                          layout.maxWidth >= 1400 ? 48 : 28,
+                          22,
+                        ),
                         child: Align(
                           alignment: AlignmentDirectional.centerStart,
                           child: Column(
@@ -215,7 +210,7 @@ class _MenuViewState extends State<_MenuView> {
                                 'Our menu',
                                 style: TextStyle(
                                   color: Colors.white,
-                                  fontSize: 28,
+                                  fontSize: MediaQuery.sizeOf(context).width >= 800 ? 36 : 28,
                                   fontWeight: FontWeight.w700,
                                 ),
                               ),
@@ -224,7 +219,9 @@ class _MenuViewState extends State<_MenuView> {
                                 'Made fresh, served with care.',
                                 style: TextStyle(
                                   color: MenuPalette.muted,
-                                  fontSize: 14,
+                                  fontSize: MediaQuery.sizeOf(context).width >= 800
+                                      ? 18
+                                      : 14,
                                 ),
                               ),
                             ],
@@ -237,9 +234,14 @@ class _MenuViewState extends State<_MenuView> {
                 SliverToBoxAdapter(
                   child: Center(
                     child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 1100),
+                      constraints: const BoxConstraints(maxWidth: 1600),
                       child: Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                        padding: EdgeInsets.fromLTRB(
+                          layout.maxWidth >= 1400 ? 48 : 28,
+                          8,
+                          layout.maxWidth >= 1400 ? 48 : 28,
+                          20,
+                        ),
                         child: TextField(
                           controller: _searchController,
                           onChanged: context.read<MenuCubit>().search,
@@ -255,11 +257,11 @@ class _MenuViewState extends State<_MenuView> {
                             ),
                             filled: true,
                             fillColor: MenuPalette.surface,
-                            contentPadding: const EdgeInsets.symmetric(
+                            contentPadding:  EdgeInsets.symmetric(
                               horizontal: 16,
-                              vertical: 14,
+                              vertical: MediaQuery.sizeOf(context).width >= 800 ? 19 : 14,
                             ),
-                            isDense: true,
+                            isDense: false,
                             suffixIcon:
                                 ValueListenableBuilder<TextEditingValue>(
                                   valueListenable: _searchController,
@@ -324,7 +326,7 @@ class _MenuViewState extends State<_MenuView> {
                       padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
                       child: Center(
                         child: ConstrainedBox(
-                          constraints: const BoxConstraints(maxWidth: 1100),
+                          constraints: const BoxConstraints(maxWidth: 1600),
                           child: Material(
                             color: MenuPalette.surface,
                             borderRadius: BorderRadius.circular(12),
@@ -387,19 +389,20 @@ class _MenuViewState extends State<_MenuView> {
                   SliverLayoutBuilder(
                     builder: (context, constraints) {
                       final width = constraints.crossAxisExtent;
-                      final sideInset = width > 1132
-                          ? (width - 1100) / 2
+                      final maxGridWidth = 1600.0;
+                      final sideInset = width > maxGridWidth + 32
+                          ? (width - maxGridWidth) / 2
                           : 16.0;
                       final contentWidth = width - sideInset * 2;
                       final columnCount = contentWidth < 320
                           ? 1
-                          : contentWidth < 700
+                          : contentWidth < 1100
                           ? 2
-                          : contentWidth < 1050
+                          : contentWidth < 1550
                           ? 3
                           : 4;
                       final cardWidth =
-                          (contentWidth - (columnCount - 1) * 14) / columnCount;
+                          (contentWidth - (columnCount - 1) * (contentWidth >= 800 ? 22 : 14)) / columnCount;
                       final textScale = MediaQuery.textScalerOf(
                         context,
                       ).scale(1).clamp(1.0, 2.0);
@@ -423,8 +426,8 @@ class _MenuViewState extends State<_MenuView> {
                           gridDelegate:
                               SliverGridDelegateWithFixedCrossAxisCount(
                                 crossAxisCount: columnCount,
-                                mainAxisSpacing: 14,
-                                crossAxisSpacing: 14,
+                                mainAxisSpacing: contentWidth >= 800 ? 24 : 14,
+                                crossAxisSpacing: contentWidth >= 800 ? 22 : 14,
                                 childAspectRatio: aspectRatio,
                               ),
                           itemBuilder: (context, index) {
@@ -444,34 +447,98 @@ class _MenuViewState extends State<_MenuView> {
                 ],
               ],
             );
+                    },
+                  );
+            final sideNavigation = AppNavigationRail(
+              items: _navigationItems(),
+              selectedIndex: 1,
+              onDestinationSelected: (index) =>
+                  _handleNavigation(context, index),
+              backgroundColor: MenuPalette.bg,
+              indicatorColor: MenuPalette.surface,
+              selectedColor: MenuPalette.gold,
+              unselectedColor: MenuPalette.muted,
+              width: 240,
+            );
+            final toolbarHeight = useSideNavigation ? 104.0 : 64.0;
+            final menuAppBar = SizedBox(
+              height: toolbarHeight,
+              child: AppBar(
+                backgroundColor: MenuPalette.bg,
+                foregroundColor: Colors.white,
+                automaticallyImplyLeading: false,
+                toolbarHeight: toolbarHeight,
+                titleSpacing: useSideNavigation ? 28 : 16,
+                title: Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 1600),
+                    child: _MenuHeader(onAdminTap: () => _openAdmin(context)),
+                  ),
+                ),
+              ),
+            );
+
+            if (useSideNavigation) {
+              return SafeArea(
+                child: Row(
+                  textDirection: Directionality.of(context),
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    sideNavigation,
+                    Expanded(
+                      child: Column(
+                        children: [
+                          menuAppBar,
+                          Expanded(child: menuContent),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }
+
+            return SafeArea(
+              child: Column(
+                children: [menuAppBar, Expanded(child: menuContent)],
+              ),
+            );
           },
         ),
-        bottomNavigationBar: AppBottomNavigationBar(
-          items: const [
-            AppNavigationItem(label: 'Home', icon: Icons.home_outlined),
-            AppNavigationItem(
-              label: 'Menu',
-              icon: Icons.restaurant_menu_outlined,
-            ),
-            AppNavigationItem(
-              label: 'Orders',
-              icon: Icons.receipt_long_outlined,
-            ),
-            AppNavigationItem(label: 'Account', icon: Icons.person_outline),
-          ],
-          selectedIndex: 1,
-          onDestinationSelected: (index) {
-            if (index == 0) Navigator.of(context).pushNamed('/welcome');
-            if (index == 2) openCustomerOrders(context);
-            if (index == 3) _showCustomerDetails(context);
-          },
-          backgroundColor: MenuPalette.bg,
-          indicatorColor: MenuPalette.surface,
-          selectedColor: MenuPalette.gold,
-          unselectedColor: MenuPalette.muted,
-        ),
+        bottomNavigationBar: MediaQuery.sizeOf(context).width >= 800
+            ? null
+            : AppBottomNavigationBar(
+                items: _navigationItems(),
+                selectedIndex: 1,
+                onDestinationSelected: (index) => _handleNavigation(context, index),
+                backgroundColor: MenuPalette.bg,
+                indicatorColor: MenuPalette.surface,
+                selectedColor: MenuPalette.gold,
+                unselectedColor: MenuPalette.muted,
+                height: 64,
+                maxWidth: 1400,
+              ),
       ),
     );
+  }
+
+  List<AppNavigationItem> _navigationItems() => const [
+    AppNavigationItem(label: 'Home', icon: Icons.home_outlined),
+    AppNavigationItem(label: 'Menu', icon: Icons.restaurant_menu_outlined),
+    AppNavigationItem(label: 'Orders', icon: Icons.receipt_long_outlined),
+  ];
+
+  void _handleNavigation(BuildContext context, int index) {
+    if (index == 0) {
+      final customerCubit = context.read<CustomerOrderCubit>();
+      Navigator.of(context).push(MaterialPageRoute<void>(
+        builder: (_) => BlocProvider.value(
+          value: customerCubit,
+          child: const CustomerDetailsView(editMode: true),
+        ),
+      ));
+    }
+    if (index == 2) openCustomerOrders(context);
   }
 
   void _openMeal(BuildContext context, MealModel meal) {
@@ -545,22 +612,22 @@ class _MenuViewState extends State<_MenuView> {
 }
 
 class _MenuHeader extends StatelessWidget {
-  const _MenuHeader({required this.onProfileTap, required this.onAdminTap});
-  final VoidCallback onProfileTap;
+  const _MenuHeader({required this.onAdminTap});
   final VoidCallback onAdminTap;
 
   @override
   Widget build(BuildContext context) => LayoutBuilder(
     builder: (context, constraints) {
+      final large = MediaQuery.sizeOf(context).width >= 800;
       return Row(
         children: [
-          const Icon(
+          Icon(
             Icons.restaurant_rounded,
             color: MenuPalette.gold,
-            size: 25,
+            size: large ? 48 : 25,
           ),
-          const SizedBox(width: 9),
-          const Expanded(
+          SizedBox(width: large ? 12 : 9),
+          Expanded(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -571,7 +638,7 @@ class _MenuHeader extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     color: Colors.white,
-                    fontSize: 18,
+                    fontSize: large ? 36 : 18,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
@@ -581,7 +648,7 @@ class _MenuHeader extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     color: MenuPalette.gold,
-                    fontSize: 9,
+                    fontSize: large ? 17 : 9,
                     letterSpacing: 1.2,
                   ),
                 ),
@@ -592,24 +659,13 @@ class _MenuHeader extends StatelessWidget {
             IconButton(
               onPressed: null,
               tooltip: context.tr('Notifications unavailable'),
-              icon: const Icon(Icons.notifications_none_rounded, size: 21),
-              constraints: const BoxConstraints.tightFor(width: 36, height: 40),
+              icon: Icon(Icons.notifications_none_rounded, size: large ? 27 : 21),
+              constraints: BoxConstraints.tightFor(width: large ? 48 : 36, height: large ? 48 : 40),
               padding: EdgeInsets.zero,
             ),
           const _CartButton(),
           const SizedBox(width: 6),
           const LanguageToggle(),
-          IconButton(
-            onPressed: onProfileTap,
-            tooltip: context.tr('Account'),
-            icon: const Icon(
-              Icons.person_outline_rounded,
-              color: MenuPalette.muted,
-              size: 21,
-            ),
-            constraints: const BoxConstraints.tightFor(width: 32, height: 40),
-            padding: EdgeInsets.zero,
-          ),
         ],
       );
     },
@@ -642,11 +698,15 @@ class _CartButton extends StatelessWidget {
           },
           tooltip: context.tr('Cart'),
           visualDensity: VisualDensity.compact,
-          constraints: const BoxConstraints.tightFor(width: 36, height: 40),
+          constraints: BoxConstraints.tightFor(
+            width: MediaQuery.sizeOf(context).width >= 800 ? 48 : 36,
+            height: MediaQuery.sizeOf(context).width >= 800 ? 48 : 40,
+          ),
           padding: EdgeInsets.zero,
-          icon: const Icon(
+          icon: Icon(
             Icons.shopping_cart_outlined,
             color: MenuPalette.gold,
+            size: MediaQuery.sizeOf(context).width >= 800 ? 27 : 24,
           ),
         ),
         PositionedDirectional(
@@ -672,7 +732,7 @@ class _CartButton extends StatelessWidget {
                   textAlign: TextAlign.center,
                   style: const TextStyle(
                     color: Colors.black,
-                    fontSize: 9,
+                    fontSize: 11,
                     fontWeight: FontWeight.w700,
                   ),
                 ),

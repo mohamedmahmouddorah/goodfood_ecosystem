@@ -36,19 +36,22 @@ class _DashboardBody extends StatelessWidget {
     appBar: AppBar(
       backgroundColor: OrdersPalette.background,
       foregroundColor: Colors.white,
-      title: const Row(
+      title:  Row(
         children: [
           Icon(
             Icons.restaurant_rounded,
             color: AppColors.primaryGold,
-            size: 24,
+            size: MediaQuery.sizeOf(context).width >= 800 ? 36 : 24,
           ),
           SizedBox(width: 10),
           Flexible(
             child: Text(
               'GoodFood',
               overflow: TextOverflow.ellipsis,
-              style: TextStyle(fontWeight: FontWeight.w700, fontSize: 21),
+              style: TextStyle(
+                fontWeight: FontWeight.w700,
+                fontSize: MediaQuery.sizeOf(context).width >= 800 ? 32 : 21,
+              ),
             ),
           ),
         ],
@@ -83,9 +86,11 @@ class _DashboardBody extends StatelessWidget {
           ];
           return Center(
             child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 960),
+              constraints: const BoxConstraints(maxWidth: 1500),
               child: ListView.builder(
-                padding: const EdgeInsets.all(20),
+                padding: EdgeInsets.all(
+                  MediaQuery.sizeOf(context).width >= 800 ? 28 : 20,
+                ),
                 itemCount:
                     1 +
                     (state.visibleOrders.isEmpty
@@ -96,20 +101,24 @@ class _DashboardBody extends StatelessWidget {
                     return Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const AppText(
+                         AppText(
                           'Chef Dashboard',
                           style: TextStyle(
                             color: Colors.white,
-                            fontSize: 28,
+                            fontSize: MediaQuery.sizeOf(context).width >= 800
+                                ? 34
+                                : 28,
                             fontWeight: FontWeight.w700,
                           ),
                         ),
                         const SizedBox(height: 6),
-                        const AppText(
+                         AppText(
                           'Manage and prepare incoming orders',
                           style: TextStyle(
                             color: OrdersPalette.muted,
-                            fontSize: 14,
+                            fontSize: MediaQuery.sizeOf(context).width >= 800
+                                ? 16
+                                : 14,
                           ),
                         ),
                         if (queues != null) ...[

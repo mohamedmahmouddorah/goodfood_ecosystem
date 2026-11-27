@@ -270,7 +270,9 @@ class _CartViewState extends State<CartView> {
                   ),
                   title: AppText(
                     "Your Order",
-                    style: AppFonts.mainTitle.copyWith(fontSize: 22),
+                    style: AppFonts.mainTitle.copyWith(
+                      fontSize: MediaQuery.sizeOf(context).width >= 800 ? 32 : 22,
+                    ),
                   ),
                   actions: [
                     const LanguageToggle(),

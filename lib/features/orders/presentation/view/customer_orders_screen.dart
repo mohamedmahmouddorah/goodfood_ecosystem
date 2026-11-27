@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/widgets/app_bottom_navigation_bar.dart';
 import '../../../customer_order_management/data/models/order_model.dart';
 import '../../data/repositories/customer_orders_repository.dart';
 import '../view_models/orders_cubit.dart';
@@ -57,6 +58,26 @@ class _OrdersView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final wide = MediaQuery.sizeOf(context).width >= 800;
+    final navigationItems = const [
+      AppNavigationItem(label: 'Home', icon: Icons.home_outlined),
+      AppNavigationItem(label: 'Menu', icon: Icons.restaurant_menu_outlined),
+      AppNavigationItem(label: 'Orders', icon: Icons.receipt_long_outlined),
+    ];
+
+    void navigate(int index) {
+      switch (index) {
+        case 0:
+          Navigator.of(context).pushNamed('/customer_details');
+          break;
+        case 1:
+          if (Navigator.of(context).canPop()) {
+            Navigator.of(context).pop();
+          }
+          break;
+      }
+    }
+
     return Scaffold(
       backgroundColor: OrdersPalette.background,
       body: DecoratedBox(
@@ -73,19 +94,31 @@ class _OrdersView extends StatelessWidget {
           ),
         ),
         child: SafeArea(
-          child: Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 760),
-              child: BlocBuilder<OrdersCubit, OrdersState>(
-                builder: (context, state) {
-                  final orders = state is OrdersLoadedState
-                      ? state.visibleOrders
-                      : <OrderModel>[];
-                  return Column(
-                    children: [
-                      Expanded(
-                        child: ListView.builder(
-                          padding: const EdgeInsets.all(20),
+          child: Row(
+            textDirection: Directionality.of(context),
+            children: [
+              if (wide)
+                AppNavigationRail(
+                  items: navigationItems,
+                  selectedIndex: 2,
+                  onDestinationSelected: navigate,
+                  backgroundColor: OrdersPalette.background,
+                  indicatorColor: OrdersPalette.surface,
+                  selectedColor: OrdersPalette.gold,
+                  unselectedColor: OrdersPalette.muted,
+                  width: 260,
+                ),
+              Expanded(
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 1100),
+                    child: BlocBuilder<OrdersCubit, OrdersState>(
+                      builder: (context, state) {
+                        final orders = state is OrdersLoadedState
+                            ? state.visibleOrders
+                            : <OrderModel>[];
+                        return ListView.builder(
+                          padding: EdgeInsets.all(wide ? 32 : 20),
                           itemCount: 1 + (orders.isEmpty ? 1 : orders.length),
                           itemBuilder: (context, index) {
                             if (index == 0) return _header(context, state);
@@ -137,16 +170,28 @@ class _OrdersView extends StatelessWidget {
                               ),
                             );
                           },
-                        ),
-                      ),
-                    ],
-                  );
-                },
+                        );
+                      },
+                    ),
+                  ),
+                ),
               ),
-            ),
+            ],
           ),
         ),
       ),
+      bottomNavigationBar: wide
+          ? null
+          : AppBottomNavigationBar(
+              items: navigationItems,
+              selectedIndex: 2,
+              onDestinationSelected: navigate,
+              backgroundColor: OrdersPalette.background,
+              indicatorColor: OrdersPalette.surface,
+              selectedColor: OrdersPalette.gold,
+              height: 64,
+              maxWidth: 1500,
+            ),
     );
   }
 
@@ -160,13 +205,13 @@ class _OrdersView extends StatelessWidget {
             children: [
               if (Navigator.of(context).canPop())
                 const BackButton(color: AppColors.textWhite),
-              const Icon(
+              Icon(
                 Icons.restaurant_rounded,
                 color: AppColors.primaryGold,
-                size: 28,
+                size: MediaQuery.sizeOf(context).width >= 800 ? 38 : 28,
               ),
               const SizedBox(width: 10),
-              const Expanded(
+              Expanded(
                 child: Align(
                   alignment: AlignmentDirectional.centerStart,
                   child: FittedBox(
@@ -178,7 +223,7 @@ class _OrdersView extends StatelessWidget {
                           'GoodFood',
                           style: TextStyle(
                             color: OrdersPalette.gold,
-                            fontSize: 25,
+                            fontSize: MediaQuery.sizeOf(context).width >= 800 ? 34 : 25,
                             fontWeight: FontWeight.w700,
                             letterSpacing: -.7,
                           ),
@@ -187,7 +232,7 @@ class _OrdersView extends StatelessWidget {
                           'RESTAURANT',
                           style: TextStyle(
                             color: OrdersPalette.gold,
-                            fontSize: 9,
+                            fontSize: MediaQuery.sizeOf(context).width >= 800 ? 13 : 9,
                             letterSpacing: 2.1,
                           ),
                         ),
@@ -209,18 +254,18 @@ class _OrdersView extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 28),
-          const AppText(
+           AppText(
             'Your orders',
             style: TextStyle(
               color: AppColors.textWhite,
-              fontSize: 32,
+              fontSize: MediaQuery.sizeOf(context).width >= 800 ? 42 : 32,
               fontWeight: FontWeight.w700,
             ),
           ),
           const SizedBox(height: 8),
-          const AppText(
+           AppText(
             'Track and review your restaurant orders',
-            style: TextStyle(color: OrdersPalette.muted, fontSize: 14),
+            style: TextStyle(color: OrdersPalette.muted, fontSize: MediaQuery.sizeOf(context).width >= 800 ? 18 : 14),
           ),
           const SizedBox(height: 24),
           Container(

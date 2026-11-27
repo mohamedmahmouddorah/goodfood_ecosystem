@@ -56,6 +56,7 @@ class AppBottomNavigationBar extends StatelessWidget {
           child: LayoutBuilder(
             builder: (context, constraints) {
               final showLabels = constraints.maxWidth >= 320;
+              final isWide = constraints.maxWidth >= 800;
               return Center(
                 child: ConstrainedBox(
                   constraints: BoxConstraints(maxWidth: maxWidth),
@@ -66,7 +67,7 @@ class AppBottomNavigationBar extends StatelessWidget {
                     indicatorColor: indicatorColor,
                     labelTextStyle: WidgetStateProperty.resolveWith(
                       (states) => TextStyle(
-                        fontSize: 11,
+                        fontSize: isWide ? 14 : 11,
                         height: 1.2,
                         fontWeight: states.contains(WidgetState.selected)
                             ? FontWeight.w600
@@ -85,12 +86,12 @@ class AppBottomNavigationBar extends StatelessWidget {
                           icon: Icon(
                             item.icon,
                             color: unselectedColor,
-                            size: 20,
+                            size: isWide ? 25 : 20,
                           ),
                           selectedIcon: Icon(
                             item.selectedIcon ?? item.icon,
                             color: selectedColor,
-                            size: 20,
+                            size: isWide ? 25 : 20,
                           ),
                           label: context.tr(item.label),
                           tooltip: context.tr(item.label),
@@ -108,6 +109,133 @@ class AppBottomNavigationBar extends StatelessWidget {
                 ),
               );
             },
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+
+/// Side navigation for wide layouts. Phones continue using [AppBottomNavigationBar].
+class AppNavigationRail extends StatelessWidget {
+  const AppNavigationRail({
+    super.key,
+    required this.items,
+    required this.selectedIndex,
+    required this.onDestinationSelected,
+    this.backgroundColor,
+    this.indicatorColor,
+    this.selectedColor,
+    this.unselectedColor,
+    this.width = 260,
+  });
+
+  final List<AppNavigationItem> items;
+  final int selectedIndex;
+  final ValueChanged<int> onDestinationSelected;
+  final Color? backgroundColor;
+  final Color? indicatorColor;
+  final Color? selectedColor;
+  final Color? unselectedColor;
+  final double width;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return SizedBox(
+      width: width,
+      height: double.infinity,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: backgroundColor,
+          border: BorderDirectional(
+            end: BorderSide(color: scheme.outlineVariant),
+          ),
+        ),
+        child: SafeArea(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const SizedBox(height: 22),
+              for (var index = 0; index < items.length; index++)
+                _RailItem(
+                  item: items[index],
+                  selected: index == selectedIndex,
+                  backgroundColor: indicatorColor,
+                  selectedColor: selectedColor,
+                  unselectedColor: unselectedColor,
+                  onTap: () {
+                    final action = items[index].onTap;
+                    if (action != null) {
+                      action();
+                    } else {
+                      onDestinationSelected(index);
+                    }
+                  },
+                ),
+              const Spacer(),
+              const SizedBox(height: 18),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _RailItem extends StatelessWidget {
+  const _RailItem({
+    required this.item,
+    required this.selected,
+    required this.backgroundColor,
+    required this.selectedColor,
+    required this.unselectedColor,
+    required this.onTap,
+  });
+
+  final AppNavigationItem item;
+  final bool selected;
+  final Color? backgroundColor;
+  final Color? selectedColor;
+  final Color? unselectedColor;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final foreground = selected ? selectedColor : unselectedColor;
+    return Padding(
+      padding: const EdgeInsetsDirectional.fromSTEB(12, 5, 12, 5),
+      child: Material(
+        color: selected ? (backgroundColor ?? Colors.transparent) : Colors.transparent,
+        borderRadius: BorderRadius.circular(14),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(14),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsetsDirectional.fromSTEB(16, 13, 16, 13),
+            child: Row(
+              children: [
+                Icon(
+                  selected ? (item.selectedIcon ?? item.icon) : item.icon,
+                  color: foreground,
+                  size: 25,
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Text(
+                    context.tr(item.label),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: foreground,
+                      fontSize: 17,
+                      fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),

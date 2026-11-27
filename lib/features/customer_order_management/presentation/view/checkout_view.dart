@@ -167,14 +167,14 @@ class _CheckoutViewState extends State<CheckoutView> {
                     AppText(
                       "Checkout",
                       style: AppFonts.boldSubTitleWhite18.copyWith(
-                        fontSize: isSmall ? 16 : 18,
+                        fontSize: isWide ? 30 : (isSmall ? 16 : 18),
                       ),
                     ),
                     const SizedBox(height: 2),
                     AppText(
                       "GOODFOOD DINING",
                       style: AppFonts.smallGoldTiltle.copyWith(
-                        fontSize: isSmall ? 8 : 10,
+                        fontSize: isWide ? 14 : (isSmall ? 8 : 10),
                         letterSpacing: 1.2,
                         fontWeight: FontWeight.bold,
                       ),
