@@ -1,14 +1,17 @@
+import 'package:goodfood_ecosystem/core/widgets/app_trash_button.dart';
 import 'package:flutter/material.dart';
 import 'package:goodfood_ecosystem/core/localization/goodfood_localizations.dart';
 import '../../../customer_order_management/data/models/order_model.dart';
 import '../../../menu/presentation/widgets/meal_image.dart';
+import 'order_cancellation_reason.dart';
 import 'order_status_badge.dart';
 import 'orders_palette.dart';
 
 class OrderCard extends StatelessWidget {
-  const OrderCard({super.key, required this.order, this.onTap});
+  const OrderCard({super.key, required this.order, this.onTap, this.onCancel});
   final OrderModel order;
   final VoidCallback? onTap;
+  final VoidCallback? onCancel;
 
   @override
   Widget build(BuildContext context) {
@@ -147,6 +150,12 @@ class OrderCard extends StatelessWidget {
                       ],
                     ],
                   ),
+                  if (order.status == OrderStatus.canceled) ...[
+                    const SizedBox(height: 12),
+                    OrderCancellationReason(reason: order.cancellationReason),
+                  ],
+                  if (onCancel != null)
+                    AppTrashButton(label: 'Cancel Order', onPressed: onCancel!),
                 ],
               );
             },

@@ -1,11 +1,10 @@
+import 'package:goodfood_ecosystem/core/widgets/app_snack_bar.dart';
 import 'package:goodfood_ecosystem/core/widgets/language_toggle.dart';
 import 'package:goodfood_ecosystem/core/localization/goodfood_localizations.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:goodfood_ecosystem/core/constants/app_assets.dart';
-import 'package:goodfood_ecosystem/core/constants/app_colors.dart';
 import 'package:goodfood_ecosystem/core/constants/app_fonts.dart';
 import 'package:goodfood_ecosystem/features/auth/presentation/view_model/auth_cubit.dart';
 import 'package:goodfood_ecosystem/features/auth/presentation/view_model/auth_state.dart';
@@ -16,74 +15,20 @@ class RoleView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final authCubit = context.read<AuthCubit>();
+    final roleState = context.watch<AuthCubit>().state;
     return BlocListener<AuthCubit, AuthState>(
       listener: (context, state) {
-        debugPrint('Listener received: ${state.runtimeType}');
-
-        // TODO: implement listener
         if (state is AuthSelectRoleSuccessState) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Row(
-                mainAxisAlignment: .spaceBetween,
-                children: [
-                  AppText(
-                    "You now selected as ${state.role}",
-                    style: AppFonts.subTitle,
-                  ),
-                ],
-              ),
-              backgroundColor: AppColors.errorBackground,
-              behavior: .floating,
-              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-              margin: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadiusGeometry.circular(15),
-                side: BorderSide(color: AppColors.errorBorder),
-              ),
-            ),
+          showAppSnackBar(
+            context,
+            message: 'You now selected as ${state.role}',
+            kind: FeedbackKind.success,
           );
           if (state.role == "Stuff") {
             Navigator.pushReplacementNamed(context, '/login');
           } else {
             Navigator.pushReplacementNamed(context, '/welcome');
           }
-        }
-        if (state is AuthSelectRoleFailState) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Row(
-                children: [
-                  Padding(
-                    padding: const EdgeInsetsDirectional.only(end: 16.0),
-                    child: Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(999),
-                        color: AppColors.errorIconBackground,
-                      ),
-                      child: Icon(
-                        Icons.error,
-                        size: 20,
-                        color: AppColors.errorIcon,
-                      ),
-                    ),
-                  ),
-                  AppText(state.msg, style: AppFonts.subTitle),
-                ],
-              ),
-              backgroundColor: AppColors.errorBackground,
-              behavior: .floating,
-              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-              margin: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadiusGeometry.circular(15),
-                side: BorderSide(color: AppColors.errorBorder),
-              ),
-            ),
-          );
         }
       },
       child: Scaffold(
@@ -133,6 +78,11 @@ class RoleView extends StatelessWidget {
                       "Choose the type of device you are setting up",
                       style: AppFonts.subTitle.copyWith(fontSize: 16),
                     ),
+                    if (roleState is AuthSelectRoleFailState)
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(12, 16, 12, 0),
+                        child: AppInlineFeedback(roleState.msg),
+                      ),
                     Padding(
                       padding: const EdgeInsets.only(top: 32.0),
                       child: LayoutBuilder(
@@ -153,7 +103,9 @@ class RoleView extends StatelessWidget {
                             child: ConstrainedBox(
                               constraints: const BoxConstraints(maxWidth: 760),
                               child: Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 16),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                ),
                                 child: constraints.maxWidth < 560
                                     ? Column(
                                         children: [

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../localization/goodfood_localizations.dart';
 
 enum AppButtonVariant { filled, outlined, text }
 
@@ -88,6 +89,8 @@ class AppButton extends StatelessWidget {
         child: content,
       ),
     };
-    return tooltip == null ? button : Tooltip(message: tooltip!, child: button);
+    return tooltip == null
+        ? button
+        : Tooltip(message: context.tr(tooltip!), child: button);
   }
 }

@@ -31,7 +31,9 @@ class WelcomeView extends StatelessWidget {
           child: LayoutBuilder(
             builder: (context, constraints) {
               final wide = constraints.maxWidth >= 800;
-              final scale = (constraints.maxWidth / 900).clamp(1.0, 1.45).toDouble();
+              final scale = (constraints.maxWidth / 900)
+                  .clamp(1.0, 1.45)
+                  .toDouble();
               final content = Container(
                 constraints: const BoxConstraints(maxWidth: 1120),
                 margin: EdgeInsets.symmetric(
@@ -42,9 +44,15 @@ class WelcomeView extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: const Color(0xD9001014),
                   borderRadius: BorderRadius.circular(wide ? 32 : 24),
-                  border: Border.all(color: AppColors.cardBorder.withOpacity(.7)),
+                  border: Border.all(
+                    color: AppColors.cardBorder.withOpacity(.7),
+                  ),
                   boxShadow: const [
-                    BoxShadow(color: Colors.black38, blurRadius: 30, offset: Offset(0, 14)),
+                    BoxShadow(
+                      color: Colors.black38,
+                      blurRadius: 30,
+                      offset: Offset(0, 14),
+                    ),
                   ],
                 ),
                 child: wide
@@ -52,7 +60,13 @@ class WelcomeView extends StatelessWidget {
                         children: [
                           Expanded(child: _brandPanel(context, scale)),
                           SizedBox(width: 52 * scale),
-                          Expanded(child: _welcomeActions(context, scale, centered: false)),
+                          Expanded(
+                            child: _welcomeActions(
+                              context,
+                              scale,
+                              centered: false,
+                            ),
+                          ),
                         ],
                       )
                     : Column(
@@ -65,11 +79,7 @@ class WelcomeView extends StatelessWidget {
                       ),
               );
 
-              return Center(
-                child: SingleChildScrollView(
-                  child: content,
-                ),
-              );
+              return Center(child: SingleChildScrollView(child: content));
             },
           ),
         ),
@@ -87,8 +97,17 @@ class WelcomeView extends StatelessWidget {
           width: 190 * scale,
           height: 140 * scale,
         ),
-        AppText('GoodFood', style: AppFonts.mainTitle.copyWith(fontSize: 42 * scale)),
-        AppText('RESTAURANT', style: AppFonts.smallGoldTiltle.copyWith(fontSize: 14 * scale, letterSpacing: 3)),
+        AppText(
+          'GoodFood',
+          style: AppFonts.mainTitle.copyWith(fontSize: 42 * scale),
+        ),
+        AppText(
+          'RESTAURANT',
+          style: AppFonts.smallGoldTiltle.copyWith(
+            fontSize: 14 * scale,
+            letterSpacing: 3,
+          ),
+        ),
         SizedBox(height: 20 * scale),
         Container(
           width: 76 * scale,
@@ -102,16 +121,25 @@ class WelcomeView extends StatelessWidget {
         AppText(
           'Fresh ingredients  •  Great taste',
           textAlign: TextAlign.center,
-          style: AppFonts.subTitle.copyWith(fontSize: 17 * scale, color: Colors.white70),
+          style: AppFonts.subTitle.copyWith(
+            fontSize: 17 * scale,
+            color: Colors.white70,
+          ),
         ),
       ],
     );
   }
 
-  Widget _welcomeActions(BuildContext context, double scale, {required bool centered}) {
+  Widget _welcomeActions(
+    BuildContext context,
+    double scale, {
+    required bool centered,
+  }) {
     return Column(
       mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: centered ? CrossAxisAlignment.center : CrossAxisAlignment.start,
+      crossAxisAlignment: centered
+          ? CrossAxisAlignment.center
+          : CrossAxisAlignment.start,
       children: [
         AppText(
           'Welcome',
@@ -134,22 +162,31 @@ class WelcomeView extends StatelessWidget {
               backgroundColor: AppColors.goldDark,
               foregroundColor: Colors.black,
               elevation: 5,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
             ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                AppText(
-                  'Start Ordering',
-                  style: AppFonts.subTitle.copyWith(
-                    color: Colors.black,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 20 * scale,
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  AppText(
+                    'Start Ordering',
+                    style: AppFonts.subTitle.copyWith(
+                      color: Colors.black,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 20 * scale,
+                    ),
                   ),
-                ),
-                SizedBox(width: 12 * scale),
-                Icon(Icons.arrow_forward_rounded, size: 27 * scale, color: Colors.black),
-              ],
+                  SizedBox(width: 12 * scale),
+                  Icon(
+                    Icons.arrow_forward_rounded,
+                    size: 27 * scale,
+                    color: Colors.black,
+                  ),
+                ],
+              ),
             ),
           ),
         ),

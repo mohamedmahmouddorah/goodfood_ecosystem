@@ -86,20 +86,8 @@ Future<void> main() async {
       await prefs.remove('customer-chef-smoke-resume');
       results['passed'] = true;
     } else {
-      final customer = await CustomerIdentityService(auth).ensureSignedIn();
-      check(results, 'customerIsAnonymous', customer.isAnonymous);
       final a = await chef('customer-workflow-a', 'chef-a@local.test');
       final b = await chef('customer-workflow-b', 'chef-b@local.test');
-      check(
-        results,
-        'threeIndependentIdentities',
-        {
-              customer.uid,
-              a.auth.currentUser!.uid,
-              b.auth.currentUser!.uid,
-            }.length ==
-            3,
-      );
       final creator = CustomerOrderCubit(secureCustomerFlow: true);
       creator.setCustomerDeyails(
         tableno: 7,
@@ -125,12 +113,35 @@ Future<void> main() async {
         'actualCustomerCubitCreatesOrder',
         creator.state is PlaceOrderSuccessState,
       );
+      final customer = auth.currentUser!;
+      check(results, 'customerIsAnonymous', customer.isAnonymous);
+      check(
+        results,
+        'threeIndependentIdentities',
+        {
+              customer.uid,
+              a.auth.currentUser!.uid,
+              b.auth.currentUser!.uid,
+            }.length ==
+            3,
+      );
       final id = creator.order!.docId;
       final data = (await store.collection('orders').doc(id).get()).data()!;
       check(
         results,
         'realOwnerAndServerCreationTime',
         data['customerId'] == customer.uid && data['created_at'] is Timestamp,
+      );
+      final customerOrders = CustomerOrdersRepository(store);
+      final myOrders = await customerOrders
+          .watchCustomerOrders(auth)
+          .firstWhere((rows) => rows.any((order) => order.docId == id))
+          .timeout(const Duration(seconds: 15));
+      final pending = myOrders.firstWhere((order) => order.docId == id);
+      check(
+        results,
+        'newOrderAppearsInMyOrdersAsPendingAndUnassigned',
+        pending.status == OrderStatus.pending && pending.isUnassigned,
       );
       for (final repo in [a.repo, b.repo]) {
         await repo

@@ -189,6 +189,85 @@ void main() {
       );
       expect(restored.ready.single.acceptedByChefId, 'auth-a');
       expect(restored.active, isEmpty);
+      expect(restored.history.single.docId, 'order');
+    },
+  );
+
+  test(
+    'history includes only assigned ready, delivered and canceled orders',
+    () async {
+      final store = FakeFirebaseFirestore();
+      final authA = TestAuth('a');
+      final authB = TestAuth('b');
+      addTearDown(authA.changes.close);
+      addTearDown(authB.changes.close);
+      for (final uid in ['a', 'b']) {
+        await store.collection('users').doc(uid).set({
+          'name': uid,
+          'role': 'Chef',
+          'status': 'Active',
+        });
+        for (final status in OrderStatus.values) {
+          await store.collection('orders').doc('$uid-${status.name}').set({
+            ...legacyOrder(),
+            'status': status.name,
+            'acceptedByChefId': uid,
+          });
+        }
+      }
+      await store.collection('orders').doc('unassigned').set({
+        ...legacyOrder(),
+        'status': 'canceled',
+      });
+      final repo = ChefOrdersRepository(store: store, auth: authA);
+      final historyA = (await waitQueue(repo, (_) => true)).history;
+      final historyB = (await waitQueue(
+        ChefOrdersRepository(store: store, auth: authB),
+        (_) => true,
+      )).history;
+      expect(
+        historyA.map((order) => order.docId),
+        unorderedEquals(['a-ready', 'a-delivered', 'a-canceled']),
+      );
+      expect(
+        historyB.map((order) => order.docId),
+        unorderedEquals(['b-ready', 'b-delivered', 'b-canceled']),
+      );
+
+      final initial = Completer<void>();
+      final cleared = Completer<void>();
+      final switched = Completer<ChefOrderQueues>();
+      final subscription = repo.watch().listen(
+        (queues) {
+          if (queues.chef.uid == 'a' && !initial.isCompleted) {
+            initial.complete();
+          }
+          if (queues.chef.uid == 'b' && !switched.isCompleted) {
+            expect(cleared.isCompleted, isTrue);
+            switched.complete(queues);
+          }
+        },
+        onError: (Object error) {
+          if (error is ChefAccessDenied && !cleared.isCompleted) {
+            cleared.complete();
+          }
+        },
+      );
+      addTearDown(subscription.cancel);
+      await initial.future.timeout(const Duration(seconds: 5));
+      authA.currentUser = TestUser('b');
+      authA.changes.add(authA.currentUser);
+      await cleared.future.timeout(
+        const Duration(seconds: 5),
+        onTimeout: () => fail('Previous chef queues were not cleared.'),
+      );
+      expect(
+        (await switched.future.timeout(
+          const Duration(seconds: 5),
+          onTimeout: () => fail('New chef queues did not load.'),
+        )).history.map((order) => order.docId),
+        unorderedEquals(['b-ready', 'b-delivered', 'b-canceled']),
+      );
     },
   );
 

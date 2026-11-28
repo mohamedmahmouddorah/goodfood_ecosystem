@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 import '../../../../core/firebase/customer_identity_service.dart';
 import '../../../../core/firebase/firebase_environment.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -15,7 +16,7 @@ class CustomerOrderCubit extends Cubit<CustomerOrderState> {
     FirebaseFirestore? store,
     CustomerOrderTracking? tracking,
     FirebaseAuth? auth,
-    bool secureCustomerFlow = FirebaseEnvironment.useEmulators,
+    bool secureCustomerFlow = FirebaseEnvironment.useOwnedCustomerOrders,
   }) : store = store ?? FirebaseEnvironment.store,
        _tracking = tracking,
        _auth = auth,
@@ -175,10 +176,9 @@ class CustomerOrderCubit extends Cubit<CustomerOrderState> {
   ) async {
     if (isClosed || state is PlaceOrderLoadingState) return;
 
-    pendingOrderId = store.collection("orders").doc().id;
-
     emit(PlaceOrderLoadingState());
 
+    var step = 'prepare order';
     try {
       if (_secureCustomerFlow && (items.isEmpty || items.length > 5)) {
         pendingOrderId = null;
@@ -189,9 +189,11 @@ class CustomerOrderCubit extends Cubit<CustomerOrderState> {
         );
         return;
       }
+      step = 'authenticate customer';
       final customer = _secureCustomerFlow
           ? await _identity.ensureSignedIn()
           : null;
+      step = 'create order';
       order = OrderModel(
         customerId: customer?.uid,
         tableNo: tableNo ?? 1,
@@ -205,7 +207,8 @@ class CustomerOrderCubit extends Cubit<CustomerOrderState> {
         clientName: name,
       );
 
-      final orderRef = store.collection("orders").doc(pendingOrderId);
+      final orderRef = store.collection('orders').doc();
+      pendingOrderId = orderRef.id;
 
       order!.docId = orderRef.id;
       order!.dispId = 'GF-${orderRef.id.substring(0, 6).toUpperCase()}';
@@ -230,33 +233,33 @@ class CustomerOrderCubit extends Cubit<CustomerOrderState> {
 
       emit(PlaceOrderSuccessState(orderId: createdOrder.dispId));
     } on FirebaseException catch (e) {
+      if (kDebugMode) {
+        debugPrint('Order placement failed ($step): [${e.plugin}/${e.code}]');
+      }
       pendingOrderId = null;
       order = null;
 
-      String message;
-
-      switch (e.code) {
-        case 'unavailable':
-          message = 'Please check your internet connection.';
-          break;
-        case 'permission-denied':
-          message = 'You are not allowed to place this order.';
-          break;
-        case 'deadline-exceeded':
-          message = 'The request took too long. Please try again.';
-          break;
-        case 'resource-exhausted':
-          message = 'Too many requests. Please try again later.';
-          break;
-        default:
-          message = 'Something went wrong. Please try again.';
-      }
-
+      final message = switch (e.code) {
+        'operation-not-allowed' || 'admin-restricted-operation' =>
+          'Guest sign-in is unavailable. Please contact support.',
+        'unavailable' ||
+        'network-request-failed' => 'Please check your internet connection.',
+        'permission-denied' => 'You are not allowed to place this order.',
+        'deadline-exceeded' => 'The request took too long. Please try again.',
+        'resource-exhausted' ||
+        'too-many-requests' => 'Too many requests. Please try again later.',
+        _ when e is FirebaseAuthException =>
+          'Could not sign in to place your order. Please try again.',
+        _ => 'Something went wrong. Please try again.',
+      };
       emit(PlaceOrderFailState(msg: message));
     } catch (e) {
+      if (kDebugMode) {
+        debugPrint('Order placement failed ($step): ${e.runtimeType}');
+      }
       pendingOrderId = null;
       order = null;
-      emit(PlaceOrderFailState(msg: e.toString()));
+      emit(PlaceOrderFailState(msg: 'Something went wrong. Please try again.'));
     }
   }
 }

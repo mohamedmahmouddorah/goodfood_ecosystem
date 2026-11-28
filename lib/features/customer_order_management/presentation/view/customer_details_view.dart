@@ -69,7 +69,10 @@ class _CustomerDetailsViewState extends State<CustomerDetailsView> {
             MaterialPageRoute(
               builder: (context) => BlocProvider.value(
                 value: orderCubit,
-                child: MenuScreen(repository: menuCubit!.repo, repo: cartCubit!.repo),
+                child: MenuScreen(
+                  repository: menuCubit!.repo,
+                  repo: cartCubit!.repo,
+                ),
               ),
             ),
           );
@@ -94,8 +97,18 @@ class _CustomerDetailsViewState extends State<CustomerDetailsView> {
           title: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              AppText('GoodFood', style: AppFonts.mainTitle.copyWith(fontSize: MediaQuery.sizeOf(context).width >= 800 ? 34 : 24)),
-              AppText('RESTAURANT', style: AppFonts.smallGoldTiltle.copyWith(fontSize: MediaQuery.sizeOf(context).width >= 800 ? 14 : null)),
+              AppText(
+                'GoodFood',
+                style: AppFonts.mainTitle.copyWith(
+                  fontSize: MediaQuery.sizeOf(context).width >= 800 ? 34 : 24,
+                ),
+              ),
+              AppText(
+                'RESTAURANT',
+                style: AppFonts.smallGoldTiltle.copyWith(
+                  fontSize: MediaQuery.sizeOf(context).width >= 800 ? 14 : null,
+                ),
+              ),
             ],
           ),
           centerTitle: true,
@@ -126,9 +139,15 @@ class _CustomerDetailsViewState extends State<CustomerDetailsView> {
                       decoration: BoxDecoration(
                         color: const Color(0xE6001014),
                         borderRadius: BorderRadius.circular(wide ? 30 : 22),
-                        border: Border.all(color: AppColors.cardBorder.withOpacity(.75)),
+                        border: Border.all(
+                          color: AppColors.cardBorder.withOpacity(.75),
+                        ),
                         boxShadow: const [
-                          BoxShadow(color: Colors.black38, blurRadius: 28, offset: Offset(0, 12)),
+                          BoxShadow(
+                            color: Colors.black38,
+                            blurRadius: 28,
+                            offset: Offset(0, 12),
+                          ),
                         ],
                       ),
                       child: Form(
@@ -139,12 +158,19 @@ class _CustomerDetailsViewState extends State<CustomerDetailsView> {
                           children: [
                             AppText(
                               'Your Details',
-                              style: AppFonts.mainTitle.copyWith(fontSize: 34 * scale),
+                              style: AppFonts.mainTitle.copyWith(
+                                fontSize: 34 * scale,
+                              ),
                             ),
                             SizedBox(height: 8),
                             AppText(
-                              widget.editMode ? 'Update your customer details.' : 'Please enter your table information to start ordering.',
-                              style: AppFonts.subTitle.copyWith(fontSize: 16 * scale, color: Colors.white70),
+                              widget.editMode
+                                  ? 'Update your customer details.'
+                                  : 'Please enter your table information to start ordering.',
+                              style: AppFonts.subTitle.copyWith(
+                                fontSize: 16 * scale,
+                                color: Colors.white70,
+                              ),
                             ),
                             SizedBox(height: wide ? 34 : 24),
                             if (wide)
@@ -172,7 +198,8 @@ class _CustomerDetailsViewState extends State<CustomerDetailsView> {
                                   if (formKey.currentState!.validate()) {
                                     orderCubit.setCustomerDeyails(
                                       tableno: int.parse(tableCont.text),
-                                      noofguests: quantityKey.currentState!.value!,
+                                      noofguests:
+                                          quantityKey.currentState!.value!,
                                       custName: nameCont.text.trim().isEmpty
                                           ? null
                                           : nameCont.text.trim(),
@@ -183,13 +210,17 @@ class _CustomerDetailsViewState extends State<CustomerDetailsView> {
                                   backgroundColor: AppColors.goldDark,
                                   foregroundColor: Colors.black,
                                   elevation: 4,
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(14),
+                                  ),
                                 ),
                                 child: Row(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
                                     AppText(
-                                      widget.editMode ? 'Save Changes' : 'Continue',
+                                      widget.editMode
+                                          ? 'Save Changes'
+                                          : 'Continue',
                                       style: AppFonts.subTitle.copyWith(
                                         color: Colors.black,
                                         fontWeight: FontWeight.bold,
@@ -197,7 +228,11 @@ class _CustomerDetailsViewState extends State<CustomerDetailsView> {
                                       ),
                                     ),
                                     SizedBox(width: 10),
-                                    Icon(Icons.arrow_forward_rounded, color: Colors.black, size: 26 * scale),
+                                    Icon(
+                                      Icons.arrow_forward_rounded,
+                                      color: Colors.black,
+                                      size: 26 * scale,
+                                    ),
                                   ],
                                 ),
                               ),
@@ -217,29 +252,49 @@ class _CustomerDetailsViewState extends State<CustomerDetailsView> {
   }
 
   Widget _tableField() => Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          AppText('Table Number', style: AppFonts.boldSubTitleWhite18.copyWith(fontSize: 18)),
-          SizedBox(height: 8),
-          AppTextFields(cont: tableCont, hintTxt: 'Enter table number', type: AppFieldsType.tableNo),
-        ],
-      );
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      AppText(
+        'Table Number',
+        style: AppFonts.boldSubTitleWhite18.copyWith(fontSize: 18),
+      ),
+      SizedBox(height: 8),
+      AppTextFields(
+        cont: tableCont,
+        hintTxt: 'Enter table number',
+        type: AppFieldsType.tableNo,
+      ),
+    ],
+  );
 
   Widget _guestsField() => Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          AppText('Number of Guests', style: AppFonts.boldSubTitleWhite18.copyWith(fontSize: 18)),
-          SizedBox(height: 8),
-          GuestsNumber(quantityKey: quantityKey, initialValue: CustomerOrderCubit().noOfGuests ?? 1),
-        ],
-      );
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      AppText(
+        'Number of Guests',
+        style: AppFonts.boldSubTitleWhite18.copyWith(fontSize: 18),
+      ),
+      SizedBox(height: 8),
+      GuestsNumber(
+        quantityKey: quantityKey,
+        initialValue: context.read<CustomerOrderCubit>().noOfGuests ?? 1,
+      ),
+    ],
+  );
 
   Widget _nameField() => Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          AppText('Your Name (Optional)', style: AppFonts.boldSubTitleWhite18.copyWith(fontSize: 18)),
-          SizedBox(height: 8),
-          AppTextFields(cont: nameCont, hintTxt: 'Enter your name', type: AppFieldsType.name),
-        ],
-      );
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      AppText(
+        'Your Name (Optional)',
+        style: AppFonts.boldSubTitleWhite18.copyWith(fontSize: 18),
+      ),
+      SizedBox(height: 8),
+      AppTextFields(
+        cont: nameCont,
+        hintTxt: 'Enter your name',
+        type: AppFieldsType.name,
+      ),
+    ],
+  );
 }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../localization/goodfood_localizations.dart';
 
 class AppNavigationItem {
   const AppNavigationItem({
@@ -54,7 +55,8 @@ class AppBottomNavigationBar extends StatelessWidget {
           ),
           child: LayoutBuilder(
             builder: (context, constraints) {
-              final showLabels = constraints.maxWidth >= 360;
+              final isWide = constraints.maxWidth >= 800;
+              final showLabels = constraints.maxWidth >= 320;
               return Center(
                 child: ConstrainedBox(
                   constraints: BoxConstraints(maxWidth: maxWidth),
@@ -63,6 +65,18 @@ class AppBottomNavigationBar extends StatelessWidget {
                     selectedIndex: selectedIndex,
                     backgroundColor: backgroundColor,
                     indicatorColor: indicatorColor,
+                    labelTextStyle: WidgetStateProperty.resolveWith(
+                      (states) => TextStyle(
+                        fontSize: 11,
+                        height: 1.2,
+                        fontWeight: states.contains(WidgetState.selected)
+                            ? FontWeight.w600
+                            : FontWeight.w400,
+                        color: states.contains(WidgetState.selected)
+                            ? selectedColor
+                            : unselectedColor,
+                      ),
+                    ),
                     labelBehavior: showLabels
                         ? NavigationDestinationLabelBehavior.alwaysShow
                         : NavigationDestinationLabelBehavior.onlyShowSelected,
@@ -79,8 +93,8 @@ class AppBottomNavigationBar extends StatelessWidget {
                             color: selectedColor,
                             size: isWide ? 25 : 20,
                           ),
-                          label: item.label,
-                          tooltip: item.label,
+                          label: context.tr(item.label),
+                          tooltip: context.tr(item.label),
                         ),
                     ],
                     onDestinationSelected: (index) {
@@ -101,7 +115,6 @@ class AppBottomNavigationBar extends StatelessWidget {
     );
   }
 }
-
 
 /// Side navigation for wide layouts. Phones continue using [AppBottomNavigationBar].
 class AppNavigationRail extends StatelessWidget {
@@ -193,7 +206,9 @@ class _RailItem extends StatelessWidget {
     return Padding(
       padding: const EdgeInsetsDirectional.fromSTEB(12, 5, 12, 5),
       child: Material(
-        color: selected ? (backgroundColor ?? Colors.transparent) : Colors.transparent,
+        color: selected
+            ? (backgroundColor ?? Colors.transparent)
+            : Colors.transparent,
         borderRadius: BorderRadius.circular(14),
         child: InkWell(
           borderRadius: BorderRadius.circular(14),

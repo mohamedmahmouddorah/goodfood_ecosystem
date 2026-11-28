@@ -21,6 +21,36 @@ const arabicMessages = <String, String>{
   'All statuses': 'كل الحالات',
   'View Details': 'عرض التفاصيل',
   'Order Details': 'تفاصيل الطلب',
+  'Order Items': 'عناصر الطلب',
+  'Rate Meal': 'قيّم الوجبة',
+  'Remove Meal': 'حذف الوجبة',
+  'Cancel Order': 'إلغاء الطلب',
+  'Cancel Order?': 'إلغاء الطلب؟',
+  'Are you sure you want to cancel this order? This action cannot be undone.':
+      'هل أنت متأكد من إلغاء الطلب؟ لا يمكن التراجع عن الإلغاء.',
+  'Keep Order': 'الاحتفاظ بالطلب',
+  'Yes, Cancel Order': 'تأكيد إلغاء الطلب',
+  'Order cancelled successfully': 'تم إلغاء الطلب بنجاح',
+  'Reason for cancellation (Optional)': 'سبب إلغاء الطلب (اختياري)',
+  'Tell us why you want to cancel...': 'اكتب سبب الإلغاء لو حابب...',
+  'Cancellation reason': 'سبب الإلغاء',
+  'Cancellation Reason': 'سبب الإلغاء',
+  'No reason provided': 'لم يتم تحديد سبب',
+  'Cancellation reason must be 200 characters or fewer.':
+      'سبب الإلغاء لازم يكون ٢٠٠ حرف أو أقل.',
+  'This order is unavailable.': 'هذا الطلب غير متاح.',
+  'Sign in to cancel this order.': 'سجّل الدخول لإلغاء هذا الطلب.',
+  'Only the customer who placed this order can cancel it.':
+      'يمكن للعميل الذي قدّم هذا الطلب فقط إلغاؤه.',
+  'This order has already been accepted or is no longer pending.':
+      'تم قبول هذا الطلب بالفعل أو لم يعد قيد الانتظار.',
+  'You do not have permission to cancel this order.':
+      'ليس لديك إذن بإلغاء هذا الطلب.',
+  'Check your connection and try again.': 'تحقّق من الاتصال وحاول مرة أخرى.',
+  'The order changed. Check its status and try again.':
+      'تغيّر الطلب. تحقّق من حالته وحاول مرة أخرى.',
+  'Unable to cancel this order. Please try again.':
+      'تعذّر إلغاء هذا الطلب. حاول مرة أخرى.',
   'Customer ID': 'معرّف العميل',
   'Guests': 'عدد الضيوف',
   'Accepted at': 'وقت القبول',
@@ -211,6 +241,9 @@ const arabicMessages = <String, String>{
   'Freshly made. Follow every step.': 'طازج التحضير. تابع كل خطوة.',
   'Active Orders': 'الطلبات الحالية',
   'Order History': 'سجل الطلبات',
+  'Orders you have finished preparing': 'الطلبات اللي خلّصت تجهيزها',
+  'Your completed kitchen orders will appear here.':
+      'الطلبات اللي خلّصت تجهيزها هتظهر هنا.',
   'Pending': 'قيد الانتظار',
   'Ready': 'جاهز',
   'Delivered': 'تم التسليم',
@@ -304,6 +337,8 @@ const arabicMessages = <String, String>{
       'تعذّر حفظ الصورة. تحقق من مساحة الجهاز وحاول مجددًا.',
   'Could not save the meal. Check Firebase setup and try again.':
       'تعذّر حفظ الوجبة. تحقق من إعداد Firebase وحاول مجددًا.',
+  'Meal updated successfully.': 'تم تحديث الوجبة.',
+  'Meal deleted successfully.': 'تم حذف الوجبة.',
   'Meal added successfully.': 'تمت إضافة الوجبة.',
   'Product changes synced with Firebase.':
       'تمت مزامنة تغييرات المنتج مع Firebase.',
@@ -359,6 +394,10 @@ const arabicMessages = <String, String>{
       'استغرق الطلب وقتًا طويلًا. حاول مجددًا.',
   'Too many requests. Please try again later.': 'طلبات كثيرة. حاول لاحقًا.',
   'Something went wrong. Please try again.': 'حدث خطأ. حاول مجددًا.',
+  'Guest sign-in is unavailable. Please contact support.':
+      'الدخول كضيف غير متاح حاليًا. تواصل مع الدعم.',
+  'Could not sign in to place your order. Please try again.':
+      'تعذّر تسجيل الدخول لإرسال طلبك. حاول مجددًا.',
   'Unable to initialize the app. Please try again.':
       'تعذّر تشغيل التطبيق. حاول مجددًا.',
   'Payment failed': 'تعذّر الدفع',
@@ -369,13 +408,16 @@ const arabicMessages = <String, String>{
   'Empty': 'فارغ',
   'دي سكرينة جديدة مش مغير النص يصيع': 'مساحة عمل الطاهي',
   'Reset your password': 'إعادة تعيين كلمة المرور',
-  'Enter the email address associated with your account. We will send you a password reset link.': 'أدخل البريد الإلكتروني المرتبط بحسابك وسنرسل رابط إعادة تعيين كلمة المرور.',
+  'Enter the email address associated with your account. We will send you a password reset link.':
+      'أدخل البريد الإلكتروني المرتبط بحسابك وسنرسل رابط إعادة تعيين كلمة المرور.',
   'Email': 'البريد الإلكتروني',
   'Email is required.': 'البريد الإلكتروني مطلوب.',
   'Please enter a valid email address.': 'أدخل بريدًا إلكترونيًا صالحًا.',
   'Send reset link': 'إرسال رابط إعادة التعيين',
-  'If an account exists for this email, a reset link will be sent.': 'إذا كان هناك حساب مرتبط بهذا البريد، فسيتم إرسال رابط إعادة التعيين.',
-  'We could not process your request. Check your connection and try again.': 'تعذّر تنفيذ الطلب. تحقق من اتصالك بالإنترنت وحاول مرة أخرى.',
+  'If an account exists for this email, a reset link will be sent.':
+      'إذا كان هناك حساب مرتبط بهذا البريد، فسيتم إرسال رابط إعادة التعيين.',
+  'We could not process your request. Check your connection and try again.':
+      'تعذّر تنفيذ الطلب. تحقق من اتصالك بالإنترنت وحاول مرة أخرى.',
 };
 
 const arabicTemplates = <String, String>{

@@ -62,9 +62,55 @@ class IdentityAuth implements FirebaseAuth {
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
+class DisabledGuestAuth extends IdentityAuth {
+  DisabledGuestAuth(this.code);
+
+  final String code;
+
+  @override
+  Future<UserCredential> signInAnonymously() async {
+    throw FirebaseAuthException(code: code);
+  }
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   setUp(() => SharedPreferences.setMockInitialValues({'role': 'Customer'}));
+  for (final code in ['operation-not-allowed', 'admin-restricted-operation']) {
+    test('blocked guest sign-in ($code) creates no order', () async {
+      final auth = DisabledGuestAuth(code);
+      addTearDown(auth.changes.close);
+      final store = FakeFirebaseFirestore();
+      final creator = CustomerOrderCubit(
+        store: store,
+        auth: auth,
+        secureCustomerFlow: true,
+      );
+      addTearDown(creator.close);
+
+      await creator.placeOrder(
+        [
+          OrderItemModel(
+            mealId: 'meal',
+            mealName: 'Meal',
+            mealImage: '',
+            quantity: 1,
+            unitPrice: 10,
+          ),
+        ],
+        10,
+        11,
+        1,
+      );
+
+      expect(
+        (creator.state as PlaceOrderFailState).msg,
+        'Guest sign-in is unavailable. Please contact support.',
+      );
+      expect(creator.order, isNull);
+      expect((await store.collection('orders').get()).docs, isEmpty);
+    });
+  }
   test(
     'guest initialization is shared across callers and existing staff session is reused',
     () async {

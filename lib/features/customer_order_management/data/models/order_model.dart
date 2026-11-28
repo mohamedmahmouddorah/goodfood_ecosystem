@@ -22,6 +22,7 @@ class OrderModel {
   final String? acceptedByChefName;
   final DateTime? acceptedAt;
   final DateTime? readyAt;
+  final String? cancellationReason;
 
   bool get isUnassigned =>
       acceptedByChefId == null &&
@@ -47,6 +48,7 @@ class OrderModel {
     this.acceptedByChefName,
     this.acceptedAt,
     this.readyAt,
+    this.cancellationReason,
   });
 
   Map<String, dynamic> toMap() {
@@ -67,6 +69,7 @@ class OrderModel {
       if (acceptedByChefName != null) 'acceptedByChefName': acceptedByChefName,
       if (acceptedAt != null) 'acceptedAt': Timestamp.fromDate(acceptedAt!),
       if (readyAt != null) 'readyAt': Timestamp.fromDate(readyAt!),
+      if (cancellationReason != null) 'cancellationReason': cancellationReason,
     };
   }
 
@@ -96,6 +99,9 @@ class OrderModel {
       acceptedByChefName: data['acceptedByChefName'] as String?,
       acceptedAt: (data['acceptedAt'] as Timestamp?)?.toDate(),
       readyAt: (data['readyAt'] as Timestamp?)?.toDate(),
+      cancellationReason: data['cancellationReason'] is String
+          ? data['cancellationReason'] as String
+          : null,
     );
   }
 

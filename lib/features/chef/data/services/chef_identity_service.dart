@@ -19,14 +19,26 @@ class ChefIdentityService {
   final FirebaseAuth auth;
   final FirebaseFirestore store;
 
-  Stream<ChefIdentity> watch() => auth.authStateChanges().switchMap((user) {
-    if (user == null) {
-      return Stream<ChefIdentity>.error(const ChefAccessDenied());
-    }
-    return store.collection('users').doc(user.uid).snapshots().map((snapshot) {
-      return identityFromProfile(user.uid, snapshot.data());
+  Stream<ChefIdentity?> watch() {
+    String? previousUid;
+    return auth.authStateChanges().switchMap((user) async* {
+      final switched = previousUid != null && previousUid != user?.uid;
+      previousUid = user?.uid;
+      if (user == null) {
+        throw const ChefAccessDenied();
+      }
+      final profile = store
+          .collection('users')
+          .doc(user.uid)
+          .snapshots()
+          .map<ChefIdentity?>(
+            (snapshot) => identityFromProfile(user.uid, snapshot.data()),
+          );
+      // Clear the previous chef's queues before waiting for the new profile.
+      if (switched) yield null;
+      yield* profile;
     });
-  });
+  }
 
   static ChefIdentity identityFromProfile(
     String uid,

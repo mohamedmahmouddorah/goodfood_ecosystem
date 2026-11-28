@@ -1,3 +1,4 @@
+import 'package:goodfood_ecosystem/core/widgets/app_snack_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/constants/app_colors.dart';
@@ -8,6 +9,8 @@ import '../../data/repositories/chef_orders_source.dart';
 import '../view_model/chef_orders_cubit.dart';
 import '../view_model/chef_orders_state.dart';
 import '../widgets/chef_order_card.dart';
+import 'chef_order_details_screen.dart';
+import 'chef_order_history_screen.dart';
 
 class ChefOrdersDashboard extends StatelessWidget {
   const ChefOrdersDashboard({super.key, required this.source});
@@ -36,7 +39,7 @@ class _DashboardBody extends StatelessWidget {
     appBar: AppBar(
       backgroundColor: OrdersPalette.background,
       foregroundColor: Colors.white,
-      title:  Row(
+      title: Row(
         children: [
           Icon(
             Icons.restaurant_rounded,
@@ -56,7 +59,25 @@ class _DashboardBody extends StatelessWidget {
           ),
         ],
       ),
-      actions: const [LanguageToggle()],
+      actions: [
+        IconButton(
+          tooltip: context.tr('Order History'),
+          icon: const Icon(Icons.history_rounded),
+          onPressed: () {
+            final cubit = context.read<ChefOrdersCubit>();
+            Navigator.push<void>(
+              context,
+              MaterialPageRoute(
+                builder: (_) => BlocProvider.value(
+                  value: cubit,
+                  child: const ChefOrderHistoryScreen(),
+                ),
+              ),
+            );
+          },
+        ),
+        const LanguageToggle(),
+      ],
     ),
     body: SafeArea(
       top: false,
@@ -64,17 +85,16 @@ class _DashboardBody extends StatelessWidget {
         listenWhen: (previous, current) =>
             previous.noticeId != current.noticeId && current.notice != null,
         listener: (context, state) {
-          final message = switch (state.notice!) {
-            ChefNotice.accepted => 'Order accepted. Preparation started.',
-            ChefNotice.ready => 'Order marked Ready.',
-            ChefNotice.conflict =>
-              'This order is no longer available. The queue has been refreshed.',
-            ChefNotice.error =>
-              'Could not update the order. Check your connection and permissions.',
-          };
-          ScaffoldMessenger.of(
+          if (ModalRoute.of(context)?.isCurrent == false) return;
+          showAppSnackBar(
             context,
-          ).showSnackBar(SnackBar(content: AppText(message)));
+            message: state.noticeMessage!,
+            kind: switch (state.notice) {
+              ChefNotice.accepted || ChefNotice.ready => FeedbackKind.success,
+              ChefNotice.conflict => FeedbackKind.warning,
+              _ => FeedbackKind.error,
+            },
+          );
         },
         builder: (context, state) {
           final cubit = context.read<ChefOrdersCubit>();
@@ -88,8 +108,11 @@ class _DashboardBody extends StatelessWidget {
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 1500),
               child: ListView.builder(
-                padding: EdgeInsets.all(
+                padding: EdgeInsets.fromLTRB(
                   MediaQuery.sizeOf(context).width >= 800 ? 28 : 20,
+                  20,
+                  MediaQuery.sizeOf(context).width >= 800 ? 28 : 20,
+                  84,
                 ),
                 itemCount:
                     1 +
@@ -101,7 +124,7 @@ class _DashboardBody extends StatelessWidget {
                     return Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                         AppText(
+                        AppText(
                           'Chef Dashboard',
                           style: TextStyle(
                             color: Colors.white,
@@ -112,7 +135,7 @@ class _DashboardBody extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(height: 6),
-                         AppText(
+                        AppText(
                           'Manage and prepare incoming orders',
                           style: TextStyle(
                             color: OrdersPalette.muted,
@@ -272,6 +295,15 @@ class _DashboardBody extends StatelessWidget {
                     padding: const EdgeInsets.only(bottom: 16),
                     child: ChefOrderCard(
                       order: order,
+                      onTap: () => Navigator.push<void>(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => BlocProvider.value(
+                            value: cubit,
+                            child: ChefOrderDetailsScreen(orderId: order.docId),
+                          ),
+                        ),
+                      ),
                       assignedChefName: cubit.source.assignmentName(order),
                       busy: state.busyIds.contains(order.docId),
                       onAccept: state.section == ChefOrdersSection.incoming

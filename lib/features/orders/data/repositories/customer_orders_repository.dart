@@ -6,13 +6,55 @@ import 'package:rxdart/rxdart.dart';
 import '../../../customer_order_management/data/models/order_model.dart';
 import '../services/customer_order_tracking.dart';
 
-/// Ownership-scoped live queries for the emulator integration. The legacy
-/// ID-based reader remains for the unchanged production flow and preview tests.
+/// Live queries for owned and legacy device-tracked orders.
 /// Firestore rules, never local IDs, enforce authorization.
 class CustomerOrdersRepository {
   CustomerOrdersRepository(this.store);
 
   final FirebaseFirestore store;
+
+  Future<void> cancelOrder(
+    String orderId,
+    FirebaseAuth auth, {
+    String? reason,
+  }) async {
+    final uid = auth.currentUser?.uid;
+    if (uid == null) {
+      throw const OrderCancellationException('Sign in to cancel this order.');
+    }
+
+    final trimmedReason = reason?.trim() ?? '';
+    if (trimmedReason.runes.length > 200) {
+      throw const OrderCancellationException(
+        'Cancellation reason must be 200 characters or fewer.',
+      );
+    }
+    final ref = store.collection('orders').doc(orderId);
+    await store.runTransaction((transaction) async {
+      final data = (await transaction.get(ref)).data();
+      if (data == null) {
+        throw const OrderCancellationException('This order is unavailable.');
+      }
+      if (auth.currentUser?.uid != uid || data['customerId'] != uid) {
+        throw const OrderCancellationException(
+          'Only the customer who placed this order can cancel it.',
+        );
+      }
+      if (data['status'] != OrderStatus.pending.name ||
+          data['acceptedByChefId'] != null ||
+          data['acceptedByChefName'] != null ||
+          data['acceptedAt'] != null ||
+          data['readyAt'] != null) {
+        throw const OrderCancellationException(
+          'This order has already been accepted or is no longer pending.',
+        );
+      }
+      transaction.update(ref, {
+        'status': OrderStatus.canceled.name,
+        if (trimmedReason.isNotEmpty) 'cancellationReason': trimmedReason,
+      });
+    });
+  }
 
   /// Server rules enforce ownership. Identity events first clear the old UI.
   Stream<List<OrderModel>> watchCustomerOrders(FirebaseAuth auth) {
@@ -59,4 +101,10 @@ class CustomerOrdersRepository {
         }),
     ]).map((orders) => orders.whereType<OrderModel>().toList());
   }
+}
+
+class OrderCancellationException implements Exception {
+  const OrderCancellationException(this.message);
+
+  final String message;
 }

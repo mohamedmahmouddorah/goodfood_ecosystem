@@ -1,4 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'core/firebase/firebase_environment.dart';
+import 'core/localization/app_locale_cubit.dart';
+import 'core/localization/goodfood_localizations.dart';
 
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
@@ -19,10 +24,8 @@ import 'package:goodfood_ecosystem/features/customer_order_management/presentati
 import 'package:goodfood_ecosystem/features/customer_order_management/presentation/view/order_confirmed_view.dart';
 import 'package:goodfood_ecosystem/features/customer_order_management/presentation/view_model/cart_cubit.dart';
 import 'package:goodfood_ecosystem/features/customer_order_management/presentation/view_model/customer_order_cubit.dart';
-import 'package:goodfood_ecosystem/features/customer_order_management/presentation/widgets/cart_item.dart';
 import 'package:goodfood_ecosystem/features/menu/presentation/view_model/menu_cubit.dart';
 import 'package:hive_flutter/adapters.dart';
-
 
 import 'features/menu/data/repositories/menu_repository.dart';
 import 'features/menu/data/services/menu_cache_factory.dart';
@@ -35,19 +38,13 @@ import 'features/orders/data/services/customer_order_tracking.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-
   try {
     await dotenv.load(fileName: ".env");
   } catch (e) {
     debugPrint('.env file not found or empty: $e');
   }
 
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
-
-  FirebaseFirestore.instance.settings = const Settings(
-    persistenceEnabled: false, );
+  await FirebaseEnvironment.initialize();
 
   await Hive.initFlutter();
   Hive.registerAdapter(OrderItemModelAdapter());
@@ -62,18 +59,18 @@ void main() async {
         : createMenuLocalCache(),
   );
 
-
-  
   repository.startSync();
-
-
 
   final cartRepositry = CartRepo(cartBox: cartBox);
   final localeCubit = AppLocaleCubit(await SharedPreferences.getInstance());
   runApp(
     MultiBlocProvider(
       providers: [
-        BlocProvider(create: (context) => AuthCubit()),
+        BlocProvider(
+          create: (context) => AuthCubit(
+            secureCustomerFlow: FirebaseEnvironment.useOwnedCustomerOrders,
+          ),
+        ),
         BlocProvider(create: (_) => localeCubit),
       ],
       child: MyApp(repository: repository, cartRepo: cartRepositry),
@@ -113,14 +110,16 @@ class MyApp extends StatelessWidget {
       routes: {
         '/orders': (context) {
           final arguments = ModalRoute.of(context)?.settings.arguments;
+          final orders = CustomerOrdersRepository(FirebaseEnvironment.store);
+          final auth = FirebaseEnvironment.auth;
           return CustomerOrdersScreen(
-            loadOrders: () => FirebaseEnvironment.useEmulators
-                ? CustomerOrdersRepository(
-                    FirebaseEnvironment.store,
-                  ).watchSignedInCustomerOrders(FirebaseEnvironment.auth)
-                : CustomerOrdersRepository(
-                    FirebaseEnvironment.store,
-                  ).watchTrackedOrders(
+            watchCustomerId: () =>
+                auth.authStateChanges().map((user) => user?.uid),
+            cancelOrder: (id, {reason}) =>
+                orders.cancelOrder(id, auth, reason: reason),
+            loadOrders: () => FirebaseEnvironment.useOwnedCustomerOrders
+                ? orders.watchSignedInCustomerOrders(auth)
+                : orders.watchTrackedOrders(
                     tracking: CustomerOrderTracking.forCurrentDevice(),
                     extraIds: arguments is List<String> ? arguments : const [],
                   ),

@@ -1,3 +1,4 @@
+import 'package:goodfood_ecosystem/core/widgets/app_snack_bar.dart';
 import 'package:goodfood_ecosystem/core/widgets/language_toggle.dart';
 import 'package:goodfood_ecosystem/core/localization/goodfood_localizations.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -88,41 +89,6 @@ class _CheckoutViewState extends State<CheckoutView> {
                   repository: widget.repository,
                   cartRepo: widget.cartRepo,
                 ),
-              ),
-            ),
-          );
-        } else if (state is UpdatePaymentFailState) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Row(
-                children: [
-                  Container(
-                    width: 38,
-                    height: 38,
-                    decoration: const BoxDecoration(
-                      color: AppColors.errorIconBackground,
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.error_outline,
-                      color: AppColors.errorIcon,
-                      size: 20,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: AppText(
-                      state.msg,
-                      style: AppFonts.mainTitle.copyWith(fontSize: 14),
-                    ),
-                  ),
-                ],
-              ),
-              backgroundColor: AppColors.errorBackground,
-              behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(14),
-                side: const BorderSide(color: AppColors.errorBorder),
               ),
             ),
           );
@@ -375,42 +341,62 @@ class _CheckoutViewState extends State<CheckoutView> {
         final isLoading =
             state is UpdatePaymentLoadingState ||
             state is PlaceOrderLoadingState;
-        return ElevatedButton(
-          onPressed: isLoading ? null : () => _onContinueToPayment(context),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.goldDark,
-            disabledBackgroundColor: AppColors.goldDark.withValues(alpha: 0.6),
-            minimumSize: const Size(double.infinity, 54),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-            ),
-            elevation: 6,
-            shadowColor: AppColors.goldDark.withValues(alpha: 0.35),
-          ),
-          child: isLoading
-              ? const SizedBox(
-                  width: 24,
-                  height: 24,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2.5,
-                    color: Colors.black,
-                  ),
-                )
-              : Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: const [
-                    AppText(
-                      "Continue to Payment",
-                      style: TextStyle(
-                        color: Colors.black,
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    SizedBox(width: 8),
-                    Icon(Icons.arrow_forward, color: Colors.black, size: 20),
-                  ],
+        final error = switch (state) {
+          PlaceOrderFailState() => state.msg,
+          UpdatePaymentFailState() => state.msg,
+          _ => null,
+        };
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (error != null) ...[
+              AppInlineFeedback(error),
+              const SizedBox(height: 10),
+            ],
+            ElevatedButton(
+              onPressed: isLoading ? null : () => _onContinueToPayment(context),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.goldDark,
+                disabledBackgroundColor: AppColors.goldDark.withValues(
+                  alpha: 0.6,
                 ),
+                minimumSize: const Size(double.infinity, 54),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                elevation: 6,
+                shadowColor: AppColors.goldDark.withValues(alpha: 0.35),
+              ),
+              child: isLoading
+                  ? const SizedBox(
+                      width: 24,
+                      height: 24,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2.5,
+                        color: Colors.black,
+                      ),
+                    )
+                  : Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: const [
+                        AppText(
+                          "Continue to Payment",
+                          style: TextStyle(
+                            color: Colors.black,
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        SizedBox(width: 8),
+                        Icon(
+                          Icons.arrow_forward,
+                          color: Colors.black,
+                          size: 20,
+                        ),
+                      ],
+                    ),
+            ),
+          ],
         );
       },
     );

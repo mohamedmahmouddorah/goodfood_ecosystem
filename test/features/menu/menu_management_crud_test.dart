@@ -10,6 +10,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:path/path.dart' as p;
+import 'package:goodfood_ecosystem/core/widgets/app_snack_bar.dart';
 import 'package:goodfood_ecosystem/features/menu/data/models/meal_model.dart';
 import 'package:goodfood_ecosystem/features/menu/data/repositories/menu_repository.dart';
 import 'package:goodfood_ecosystem/features/menu/data/services/meal_local_cache.dart';
@@ -354,7 +355,7 @@ void main() {
       imageUrl: '',
     );
     final service = _InMemoryMenuRemoteService()..seed([starter, main]);
-    final cubit = MenuCubit( MenuRepository(service));
+    final cubit = MenuCubit(MenuRepository(service));
     final initialMenu = cubit.stream.firstWhere(
       (state) => state.status == MenuStatus.success,
     );
@@ -840,6 +841,42 @@ void main() {
       ),
     );
     await service.dispose();
+  });
+
+  testWidgets('denied admin save stays inline above Save Meal', (tester) async {
+    tester.view.physicalSize = const Size(1000, 1000);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final service = _DeniedAddMenuRemoteService();
+    addTearDown(service.dispose);
+    await tester.pumpWidget(
+      MaterialApp(
+        home: MenuManagementScreen(repository: MenuRepository(service)),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Add product'));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('meal-name')),
+      'Test meal',
+    );
+    await tester.enterText(find.byKey(const ValueKey('meal-price')), '12.50');
+    final save = find.text('Save Meal');
+    await tester.ensureVisible(save);
+    await tester.tap(save);
+    await tester.pumpAndSettle();
+    final error = find.byType(AppInlineFeedback);
+    expect(error, findsOneWidget);
+    expect(find.textContaining('signed-in admin'), findsOneWidget);
+    expect(
+      tester.getBottomLeft(error).dy,
+      lessThan(tester.getTopLeft(save).dy),
+    );
+    expect(find.byType(SnackBar), findsNothing);
+    expect(service.meals, isEmpty);
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('admin can add and edit a meal from the editor', (tester) async {
@@ -1339,7 +1376,10 @@ class _OfflineMealImageStorageService implements MealImageStorageService {
   }
 
   @override
-  Future<String> uploadLocalMealImage(String localPath, {String? fileName}) async {
+  Future<String> uploadLocalMealImage(
+    String localPath, {
+    String? fileName,
+  }) async {
     throw http.ClientException(
       "Failed host lookup: 'api.imgbb.com'",
       Uri.https('api.imgbb.com', '/1/upload'),

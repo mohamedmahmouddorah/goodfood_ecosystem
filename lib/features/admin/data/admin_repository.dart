@@ -1,4 +1,3 @@
-
 import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -28,12 +27,15 @@ class AdminRepository implements AdminDataSource {
 
   @override
   Stream<String?> watchClaimedAdmin({bool refreshToken = false}) {
-    return auth.authStateChanges().asyncMap((user) {
-      return _checkAdmin(user);
+    var refreshPending = refreshToken;
+    return auth.idTokenChanges().asyncMap((user) {
+      final forceRefresh = refreshPending;
+      refreshPending = false;
+      return _checkAdmin(user, forceRefresh);
     });
   }
 
-  Future<String?> _checkAdmin(User? user) async {
+  Future<String?> _checkAdmin(User? user, bool forceRefresh) async {
     if (user == null || user.isAnonymous) {
       _log(
         'uid=${user?.uid} result=${user == null ? 'signed-out' : 'anonymous'}',
@@ -44,6 +46,10 @@ class AdminRepository implements AdminDataSource {
     final uid = user.uid;
 
     try {
+      final token = await user.getIdTokenResult(forceRefresh);
+      if (auth.currentUser?.uid != uid || token.claims?['admin'] != true) {
+        return null;
+      }
       final profile = await store
           .collection('users')
           .doc(uid)
@@ -65,9 +71,7 @@ class AdminRepository implements AdminDataSource {
     }
   }
 
-  String _profileResult(
-    DocumentSnapshot<Map<String, dynamic>> profile,
-  ) {
+  String _profileResult(DocumentSnapshot<Map<String, dynamic>> profile) {
     final data = profile.data();
     final role = data?['role'];
     final status = data?['status'];
@@ -75,10 +79,10 @@ class AdminRepository implements AdminDataSource {
     final result = data == null
         ? 'profile-missing'
         : role != 'Admin'
-            ? 'role-not-admin'
-            : status != 'Active'
-                ? 'status-not-active'
-                : 'profile-verified';
+        ? 'role-not-admin'
+        : status != 'Active'
+        ? 'status-not-active'
+        : 'profile-verified';
 
     if (_diagnostics) {
       final safeRole = switch (role) {
@@ -114,8 +118,7 @@ class AdminRepository implements AdminDataSource {
       .snapshots(includeMetadataChanges: true)
       .where(
         (profile) =>
-            !profile.metadata.isFromCache &&
-            !profile.metadata.hasPendingWrites,
+            !profile.metadata.isFromCache && !profile.metadata.hasPendingWrites,
       )
       .map((profile) {
         final data = profile.data();
@@ -137,9 +140,5 @@ class AdminRepository implements AdminDataSource {
       .collection('orders')
       .snapshots(includeMetadataChanges: true)
       .where((snapshot) => !snapshot.metadata.isFromCache)
-      .map(
-        (snapshot) => snapshot.docs
-            .map(OrderModel.fromDocument)
-            .toList(),
-      );
+      .map((snapshot) => snapshot.docs.map(OrderModel.fromDocument).toList());
 }

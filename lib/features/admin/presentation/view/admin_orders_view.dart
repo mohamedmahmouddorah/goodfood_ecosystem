@@ -321,6 +321,12 @@ class _OrderDetails extends StatelessWidget {
                             ? context.tr('Unavailable')
                             : _dateTime(context, order.readyAt!),
                       ),
+                      if (order.status == OrderStatus.canceled &&
+                          _present(order.cancellationReason) != null)
+                        _Detail(
+                          'Cancellation reason',
+                          order.cancellationReason!,
+                        ),
                     ],
                   ),
                 ),

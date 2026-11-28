@@ -10,6 +10,8 @@ import 'package:image_picker/image_picker.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../core/widgets/app_button.dart';
+import '../../../../core/widgets/language_toggle.dart';
+import '../../../../core/localization/goodfood_localizations.dart';
 import '../../../../core/widgets/app_snack_bar.dart';
 import '../../data/models/meal_model.dart';
 import '../../data/repositories/menu_repository.dart';
@@ -51,6 +53,7 @@ class _AddEditMealScreenState extends State<AddEditMealScreen> {
   String? _localImageName;
   bool _hasManualImageUrlEdit = false;
   bool _isSaving = false;
+  String? _saveError;
   bool _isUploadingImage = false;
 
   bool get _isEditing => widget.meal != null;
@@ -90,8 +93,19 @@ class _AddEditMealScreenState extends State<AddEditMealScreen> {
       return _buildScaffold();
     }
     return BlocListener<MenuManagementCubit, MenuManagementState>(
-      listenWhen: (previous, current) => previous.meals != current.meals,
+      listenWhen: (previous, current) =>
+          previous.meals != current.meals || current.message != null,
       listener: (context, state) {
+        final message = state.message;
+        if (message != null &&
+            !_isSaving &&
+            ModalRoute.of(context)?.isCurrent != false) {
+          showAppSnackBar(
+            context,
+            message: message,
+            kind: FeedbackKind.warning,
+          );
+        }
         final meal = widget.meal;
         if (meal == null) return;
         for (final updatedMeal in state.meals) {
@@ -283,6 +297,10 @@ class _AddEditMealScreenState extends State<AddEditMealScreen> {
                       const SizedBox(height: 12),
                       _availabilitySelector(),
                       const SizedBox(height: 18),
+                      if (_saveError != null) ...[
+                        AppInlineFeedback(_saveError!),
+                        const SizedBox(height: 10),
+                      ],
                       LayoutBuilder(
                         builder: (context, constraints) {
                           final buttons = [
@@ -526,6 +544,7 @@ class _AddEditMealScreenState extends State<AddEditMealScreen> {
           if (extension == null || bytes.isEmpty) {
             showAppSnackBar(
               context,
+              kind: FeedbackKind.error,
               message:
                   'The captured image could not be read. Please try again.',
             );
@@ -544,12 +563,17 @@ class _AddEditMealScreenState extends State<AddEditMealScreen> {
       }
 
       if (image.bytes.length > ImgBbMealImageStorageService.maxImageSize) {
-        showAppSnackBar(context, message: 'Choose an image smaller than 5 MB.');
+        showAppSnackBar(
+          context,
+          message: 'Choose an image smaller than 5 MB.',
+          kind: FeedbackKind.warning,
+        );
         return;
       }
       if (!const {'jpg', 'jpeg', 'png', 'webp'}.contains(image.extension)) {
         showAppSnackBar(
           context,
+          kind: FeedbackKind.error,
           message: 'The selected image could not be read. Please try again.',
         );
         return;
@@ -582,6 +606,9 @@ class _AddEditMealScreenState extends State<AddEditMealScreen> {
       if (!mounted || result == MealSaveResult.failed) return;
       showAppSnackBar(
         context,
+        kind: result == MealSaveResult.saved
+            ? FeedbackKind.success
+            : FeedbackKind.warning,
         message: result == MealSaveResult.saved
             ? 'Image uploaded and product updated successfully.'
             : cubit.syncErrorMessage ??
@@ -592,6 +619,7 @@ class _AddEditMealScreenState extends State<AddEditMealScreen> {
       if (mounted) {
         showAppSnackBar(
           context,
+          kind: FeedbackKind.error,
           message: error is StateError || error is MenuFailure
               ? error.toString()
               : source == _MealImageSource.camera
@@ -722,8 +750,11 @@ class _AddEditMealScreenState extends State<AddEditMealScreen> {
   }
 
   Future<void> _save() async {
-    if (_isUploadingImage) return;
+    if (_isUploadingImage || _isSaving) return;
+    setState(() => _saveError = null);
     if (!_formKey.currentState!.validate()) return;
+    FocusScope.of(context).unfocus();
+    clearAppSnackBars(context);
     final previous = widget.meal;
     final menuManagementCubit = context.read<MenuManagementCubit>();
     setState(() => _isSaving = true);
@@ -741,29 +772,38 @@ class _AddEditMealScreenState extends State<AddEditMealScreen> {
         localImageName: _localImageName,
       );
 
-      final saveResult = await menuManagementCubit.save(meal);
-      if (saveResult != MealSaveResult.failed && mounted) {
-        if (previous == null && saveResult == MealSaveResult.saved) {
-          showAppSnackBar(context, message: 'Meal added successfully.');
-        } else if (saveResult == MealSaveResult.pending) {
-          showAppSnackBar(
-            context,
-            message:
-                menuManagementCubit.syncErrorMessage ??
-                'Saved on this device. It will sync when internet is available.',
-          );
-        }
-        Navigator.of(context).pop();
+      final saveResult = await menuManagementCubit.save(
+        meal,
+        onFailure: (message) => _saveError = message,
+      );
+      if (!mounted) return;
+      if (saveResult == MealSaveResult.failed) {
+        _saveError ??=
+            'Could not save the meal. Check Firebase setup and try again.';
+        return;
       }
-    } catch (error, stackTrace) {
-      debugPrint('Meal save failed: $error\n$stackTrace');
-      if (mounted) {
+      if (saveResult == MealSaveResult.saved) {
+        showAppSnackBar(
+          context,
+          message: previous == null
+              ? 'Meal added successfully.'
+              : 'Meal updated successfully.',
+          kind: FeedbackKind.success,
+        );
+      } else {
         showAppSnackBar(
           context,
           message:
-              'Could not save the meal. Check Firebase setup and try again.',
+              menuManagementCubit.syncErrorMessage ??
+              'Saved on this device. It will sync when internet is available.',
+          kind: FeedbackKind.warning,
         );
       }
+      Navigator.of(context).pop();
+    } catch (error, stackTrace) {
+      debugPrint('Meal save failed: $error\n$stackTrace');
+      _saveError =
+          'Could not save the meal. Check Firebase setup and try again.';
     } finally {
       if (mounted) {
         setState(() {
@@ -791,12 +831,17 @@ class _AddEditMealScreenState extends State<AddEditMealScreen> {
     if (size == null || size == 0) {
       showAppSnackBar(
         context,
+        kind: FeedbackKind.error,
         message: 'The selected image could not be read. Please try again.',
       );
       return null;
     }
     if (size > ImgBbMealImageStorageService.maxImageSize) {
-      showAppSnackBar(context, message: 'Choose an image smaller than 5 MB.');
+      showAppSnackBar(
+        context,
+        message: 'Choose an image smaller than 5 MB.',
+        kind: FeedbackKind.warning,
+      );
       return null;
     }
     final extension = file.extension?.toLowerCase();
@@ -805,6 +850,7 @@ class _AddEditMealScreenState extends State<AddEditMealScreen> {
     if (extension == null || bytes.isEmpty) {
       showAppSnackBar(
         context,
+        kind: FeedbackKind.error,
         message: 'The selected image could not be read. Please try again.',
       );
       return null;
@@ -902,6 +948,7 @@ class _WindowsCameraScreenState extends State<_WindowsCameraScreen> {
       if (!opened && mounted) {
         showAppSnackBar(
           context,
+          kind: FeedbackKind.error,
           message:
               'Could not open Windows settings. Go to Settings > Privacy & security > Camera.',
         );
@@ -910,6 +957,7 @@ class _WindowsCameraScreenState extends State<_WindowsCameraScreen> {
       if (mounted) {
         showAppSnackBar(
           context,
+          kind: FeedbackKind.error,
           message:
               'Could not open Windows settings. Go to Settings > Privacy & security > Camera.',
         );
@@ -1017,9 +1065,7 @@ class _WindowsCameraScreenState extends State<_WindowsCameraScreen> {
                                     onPressed: _isOpeningSettings
                                         ? null
                                         : _openCameraSettings,
-                                    icon: const Icon(
-                                      Icons.settings_outlined,
-                                    ),
+                                    icon: const Icon(Icons.settings_outlined),
                                     label: const Text(
                                       'Open camera privacy settings',
                                       textAlign: TextAlign.center,
@@ -1037,24 +1083,23 @@ class _WindowsCameraScreenState extends State<_WindowsCameraScreen> {
                             ),
                           )
                         : isReady && controller != null
-                            ? LayoutBuilder(
-                                builder: (context, previewConstraints) {
-                                  return Center(
-                                    child: ConstrainedBox(
-                                      constraints: BoxConstraints(
-                                        maxWidth: previewConstraints.maxWidth,
-                                        maxHeight: previewConstraints.maxHeight,
-                                      ),
-                                      child: AspectRatio(
-                                        aspectRatio:
-                                            controller.value.aspectRatio,
-                                        child: CameraPreview(controller),
-                                      ),
-                                    ),
-                                  );
-                                },
-                              )
-                            : const CircularProgressIndicator(),
+                        ? LayoutBuilder(
+                            builder: (context, previewConstraints) {
+                              return Center(
+                                child: ConstrainedBox(
+                                  constraints: BoxConstraints(
+                                    maxWidth: previewConstraints.maxWidth,
+                                    maxHeight: previewConstraints.maxHeight,
+                                  ),
+                                  child: AspectRatio(
+                                    aspectRatio: controller.value.aspectRatio,
+                                    child: CameraPreview(controller),
+                                  ),
+                                ),
+                              );
+                            },
+                          )
+                        : const CircularProgressIndicator(),
                   ),
                 ),
 
@@ -1072,9 +1117,7 @@ class _WindowsCameraScreenState extends State<_WindowsCameraScreen> {
                               onPressed: _isTakingPhoto
                                   ? null
                                   : _chooseFromDevice,
-                              icon: const Icon(
-                                Icons.photo_library_outlined,
-                              ),
+                              icon: const Icon(Icons.photo_library_outlined),
                               label: const Text(
                                 'Choose from device',
                                 maxLines: 1,
@@ -1110,9 +1153,7 @@ class _WindowsCameraScreenState extends State<_WindowsCameraScreen> {
                                 onPressed: _isTakingPhoto
                                     ? null
                                     : _chooseFromDevice,
-                                icon: const Icon(
-                                  Icons.photo_library_outlined,
-                                ),
+                                icon: const Icon(Icons.photo_library_outlined),
                                 label: const Text(
                                   'Choose from device',
                                   maxLines: 1,
@@ -1148,5 +1189,4 @@ class _WindowsCameraScreenState extends State<_WindowsCameraScreen> {
       ),
     );
   }
-
 }

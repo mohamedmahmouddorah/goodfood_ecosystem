@@ -9,6 +9,7 @@ import 'package:goodfood_ecosystem/features/admin/data/admin_repository.dart';
 import 'package:goodfood_ecosystem/features/admin/presentation/view/admin_view.dart';
 import 'package:goodfood_ecosystem/features/chef_management/presentation/view/chef_management_screen.dart';
 import 'package:goodfood_ecosystem/features/customer_order_management/data/models/order_model.dart';
+import 'package:goodfood_ecosystem/features/admin/presentation/view/admin_orders_view.dart';
 import 'package:goodfood_ecosystem/features/menu/data/repositories/menu_repository.dart';
 import 'package:goodfood_ecosystem/features/menu/data/models/meal_model.dart';
 import 'package:goodfood_ecosystem/features/menu/data/services/menu_remote_service.dart';
@@ -53,20 +54,26 @@ class _MenuService extends Fake implements MenuRemoteService {
   );
 }
 
-OrderModel _order(String id, int day, OrderStatus status, {String? chef}) =>
-    OrderModel(
-      docId: id,
-      dispId: id,
-      tableNo: 4,
-      noOfGuests: 2,
-      meals: [],
-      status: status,
-      subtotal: 20,
-      serviceCharge: 2,
-      total: 22,
-      createdAt: DateTime(2026, 11, day),
-      acceptedByChefId: chef,
-    );
+OrderModel _order(
+  String id,
+  int day,
+  OrderStatus status, {
+  String? chef,
+  String? cancellationReason,
+}) => OrderModel(
+  docId: id,
+  dispId: id,
+  tableNo: 4,
+  noOfGuests: 2,
+  meals: [],
+  status: status,
+  subtotal: 20,
+  serviceCharge: 2,
+  total: 22,
+  createdAt: DateTime(2026, 11, day),
+  acceptedByChefId: chef,
+  cancellationReason: cancellationReason,
+);
 
 Future<void> _mount(
   WidgetTester tester,
@@ -141,7 +148,12 @@ void main() {
     source.orders.add([
       _order('GF-101', 20, OrderStatus.delivered),
       _order('GF-102', 21, OrderStatus.ready, chef: 'chef-a'),
-      _order('GF-103', 22, OrderStatus.canceled),
+      _order(
+        'GF-103',
+        22,
+        OrderStatus.canceled,
+        cancellationReason: 'Changed my plans.',
+      ),
     ]);
     await tester.pumpAndSettle();
     expect(find.text('3'), findsOneWidget);
@@ -152,6 +164,17 @@ void main() {
       tester.getTopLeft(find.text('#GF-103')).dy,
       lessThan(tester.getTopLeft(find.text('#GF-102')).dy),
     );
+    await tester.tap(
+      find.descendant(
+        of: find.widgetWithText(AdminOrderCard, '#GF-103'),
+        matching: find.text('View Details'),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Cancellation reason'), findsOneWidget);
+    expect(find.text('Changed my plans.'), findsOneWidget);
+    await tester.pageBack();
+    await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextField), ' #gf-102 ');
     await tester.pumpAndSettle();
     expect(find.text('#GF-102'), findsOneWidget);

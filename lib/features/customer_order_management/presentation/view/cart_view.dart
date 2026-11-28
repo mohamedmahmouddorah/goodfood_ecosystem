@@ -1,3 +1,4 @@
+import 'package:goodfood_ecosystem/core/widgets/app_snack_bar.dart';
 import 'package:goodfood_ecosystem/core/widgets/language_toggle.dart';
 import 'package:goodfood_ecosystem/core/localization/goodfood_localizations.dart';
 import 'package:flutter/material.dart';
@@ -31,153 +32,26 @@ class _CartViewState extends State<CartView> {
       listeners: [
         BlocListener<CartCubit, CartState>(
           listener: (context, state) {
+            if (ModalRoute.of(context)?.isCurrent == false) return;
             if (state is RemoveFromCartSccessState) {
-              ScaffoldMessenger.of(context)
-                ..hideCurrentSnackBar()
-                ..showSnackBar(
-                  SnackBar(
-                    content: Row(
-                      children: [
-                        Container(
-                          width: 42,
-                          height: 42,
-                          decoration: const BoxDecoration(
-                            color: AppColors.goldLight,
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(
-                            Icons.check_rounded,
-                            size: 24,
-                            color: AppColors.addChefBtn,
-                          ),
-                        ),
-                        const SizedBox(width: 14),
-                        Expanded(
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              AppText(
-                                'Removed',
-                                style: AppFonts.mainTitle.copyWith(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white,
-                                ),
-                              ),
-                              const SizedBox(height: 3),
-                              AppText(
-                                '${state.removedItem.mealName} deleted successfully!',
-                                style: AppFonts.mainTitle.copyWith(
-                                  fontSize: 13,
-                                  color: Colors.white70,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                    backgroundColor: const Color(0xFF1C2522),
-                    behavior: SnackBarBehavior.floating,
-                    elevation: 8,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 14,
-                      vertical: 12,
-                    ),
-                    margin: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 14,
-                    ),
-                    duration: const Duration(seconds: 3),
-                    dismissDirection: DismissDirection.horizontal,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                      side: BorderSide(
-                        color: AppColors.goldLight.withValues(alpha: 0.35),
-                      ),
-                    ),
-                  ),
-                );
+              showAppSnackBar(
+                context,
+                message: '${state.removedItem.mealName} deleted successfully!',
+                kind: FeedbackKind.success,
+              );
+            } else if (state is RemoveFromCartFailState) {
+              showAppSnackBar(
+                context,
+                message: state.msg,
+                kind: FeedbackKind.error,
+              );
             }
           },
         ),
         BlocListener<CustomerOrderCubit, CustomerOrderState>(
           listener: (context, state) async {
+            if (ModalRoute.of(context)?.isCurrent == false) return;
             if (state is PlaceOrderSuccessState) {
-              // Empty the cart upon placing the order
-              await cartCubit.clearCart();
-
-              if (!context.mounted) return;
-
-              ScaffoldMessenger.of(context)
-                ..hideCurrentSnackBar()
-                ..showSnackBar(
-                  SnackBar(
-                    content: Row(
-                      children: [
-                        Container(
-                          width: 42,
-                          height: 42,
-                          decoration: const BoxDecoration(
-                            color: AppColors.goldLight,
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(
-                            Icons.check_rounded,
-                            size: 24,
-                            color: AppColors.addChefBtn,
-                          ),
-                        ),
-                        const SizedBox(width: 14),
-                        Expanded(
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              AppText(
-                                'Order Placed',
-                                style: AppFonts.mainTitle.copyWith(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white,
-                                ),
-                              ),
-                              const SizedBox(height: 3),
-                              AppText(
-                                '${state.orderId} placed successfully!',
-                                style: AppFonts.mainTitle.copyWith(
-                                  fontSize: 13,
-                                  color: Colors.white70,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                    backgroundColor: const Color(0xFF1C2522),
-                    behavior: SnackBarBehavior.floating,
-                    elevation: 8,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 14,
-                      vertical: 12,
-                    ),
-                    margin: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 14,
-                    ),
-                    duration: const Duration(seconds: 3),
-                    dismissDirection: DismissDirection.horizontal,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                      side: BorderSide(
-                        color: AppColors.goldLight.withValues(alpha: 0.35),
-                      ),
-                    ),
-                  ),
-                );
-
               Navigator.push(
                 context,
                 MaterialPageRoute(
@@ -192,52 +66,6 @@ class _CartViewState extends State<CartView> {
                       repository: widget.repository,
                       cartRepo: context.read<CartCubit>().repo,
                     ),
-                  ),
-                ),
-              );
-            }
-            if (state is PlaceOrderFailState) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Row(
-                    children: [
-                      Padding(
-                        padding: const EdgeInsetsDirectional.only(end: 16.0),
-                        child: Container(
-                          width: 40,
-                          height: 40,
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(999),
-                            color: AppColors.errorIconBackground,
-                          ),
-                          child: const Icon(
-                            Icons.error,
-                            size: 20,
-                            color: AppColors.errorIcon,
-                          ),
-                        ),
-                      ),
-                      Expanded(
-                        child: AppText(
-                          state.msg,
-                          style: AppFonts.mainTitle.copyWith(fontSize: 16),
-                        ),
-                      ),
-                    ],
-                  ),
-                  backgroundColor: AppColors.errorBackground,
-                  behavior: SnackBarBehavior.floating,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 16,
-                  ),
-                  margin: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 16,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(15),
-                    side: const BorderSide(color: AppColors.errorBorder),
                   ),
                 ),
               );
@@ -271,7 +99,9 @@ class _CartViewState extends State<CartView> {
                   title: AppText(
                     "Your Order",
                     style: AppFonts.mainTitle.copyWith(
-                      fontSize: MediaQuery.sizeOf(context).width >= 800 ? 32 : 22,
+                      fontSize: MediaQuery.sizeOf(context).width >= 800
+                          ? 32
+                          : 22,
                     ),
                   ),
                   actions: [
@@ -305,6 +135,124 @@ class _CartViewState extends State<CartView> {
                       ),
                   ],
                 ),
+                bottomNavigationBar: isCartEmpty
+                    ? null
+                    : SafeArea(
+                        top: false,
+                        child: Align(
+                          alignment: Alignment.bottomCenter,
+                          heightFactor: 1,
+                          child: ConstrainedBox(
+                            constraints: BoxConstraints(
+                              maxWidth: 680,
+                              maxHeight:
+                                  MediaQuery.sizeOf(context).height * .65,
+                            ),
+                            child: SingleChildScrollView(
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Divider(
+                                    color: Color(0xff142331),
+                                    thickness: 1.5,
+                                  ),
+                                  _summaryRow('Subtotal', cartCubit.subTotal),
+                                  const SizedBox(height: 6),
+                                  _summaryRow('Tax', cartCubit.tax),
+                                  const Padding(
+                                    padding: EdgeInsets.symmetric(
+                                      horizontal: 24,
+                                    ),
+                                    child: Divider(
+                                      color: Color(0xff142331),
+                                      thickness: 1.5,
+                                    ),
+                                  ),
+                                  _summaryRow(
+                                    'Total',
+                                    cartCubit.total,
+                                    isTotal: true,
+                                  ),
+                                  if (orderState is PlaceOrderFailState)
+                                    Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 24,
+                                      ),
+                                      child: AppInlineFeedback(orderState.msg),
+                                    ),
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 24.0,
+                                      vertical: 16,
+                                    ),
+                                    child: ElevatedButton(
+                                      onPressed: isPlacingOrder
+                                          ? null
+                                          : () {
+                                              clearAppSnackBars(context);
+                                              orderCubit.placeOrder(
+                                                cartCubit.cartItems,
+                                                cartCubit.subTotal,
+                                                cartCubit.total,
+                                                cartCubit.tax,
+                                              );
+                                            },
+                                      style: ElevatedButton.styleFrom(
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(
+                                            15,
+                                          ),
+                                        ),
+                                        backgroundColor: AppColors.goldDark,
+                                        disabledBackgroundColor: AppColors
+                                            .goldDark
+                                            .withValues(alpha: 0.6),
+                                        shadowColor: AppColors.goldDark
+                                            .withValues(alpha: 0.5),
+                                        elevation: 10,
+                                        minimumSize: const Size(
+                                          double.infinity,
+                                          56,
+                                        ),
+                                      ),
+                                      child: isPlacingOrder
+                                          ? const SizedBox(
+                                              width: 24,
+                                              height: 24,
+                                              child: CircularProgressIndicator(
+                                                strokeWidth: 2.5,
+                                                color: Colors.black,
+                                              ),
+                                            )
+                                          : Row(
+                                              mainAxisAlignment:
+                                                  MainAxisAlignment.center,
+                                              children: [
+                                                AppText(
+                                                  "Place Order",
+                                                  style: AppFonts.subTitle
+                                                      .copyWith(
+                                                        color: Colors.black,
+                                                        fontWeight:
+                                                            FontWeight.bold,
+                                                      ),
+                                                ),
+                                                const SizedBox(width: 8),
+                                                const Icon(
+                                                  Icons.arrow_forward,
+                                                  color: Colors.black,
+                                                  size: 24,
+                                                ),
+                                              ],
+                                            ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
                 body: Stack(
                   children: [
                     if (isCartEmpty)
@@ -321,6 +269,7 @@ class _CartViewState extends State<CartView> {
                                     horizontal: 20.0,
                                   ),
                                   child: ListView.builder(
+                                    padding: const EdgeInsets.only(bottom: 80),
                                     itemCount: cartState.cartItems.length,
                                     itemBuilder: (context, index) => Padding(
                                       padding: const EdgeInsets.symmetric(
@@ -331,168 +280,6 @@ class _CartViewState extends State<CartView> {
                                       ),
                                     ),
                                   ),
-                                ),
-                              ),
-                              const Divider(
-                                color: Color(0xff142331),
-                                thickness: 1.5,
-                              ),
-                              Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 24.0,
-                                ),
-                                child: Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    AppText(
-                                      "Subtotal",
-                                      style: AppFonts.reqularSubTitleWhite18
-                                          .copyWith(
-                                            color: const Color(0xff94A3B8),
-                                            fontSize: 15,
-                                          ),
-                                    ),
-                                    AppText(
-                                      "\$${cartCubit.subTotal.toStringAsFixed(2)}",
-                                      style: AppFonts.reqularSubTitleWhite18
-                                          .copyWith(fontSize: 15),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(height: 6),
-                              Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 24.0,
-                                ),
-                                child: Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    AppText(
-                                      "Tax",
-                                      style: AppFonts.reqularSubTitleWhite18
-                                          .copyWith(
-                                            color: const Color(0xff94A3B8),
-                                            fontSize: 15,
-                                          ),
-                                    ),
-                                    AppText(
-                                      "\$${cartCubit.tax.toStringAsFixed(2)}",
-                                      style: AppFonts.reqularSubTitleWhite18
-                                          .copyWith(fontSize: 15),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              const Padding(
-                                padding: EdgeInsets.symmetric(horizontal: 24.0),
-                                child: Divider(
-                                  color: Color(0xff142331),
-                                  thickness: 1.5,
-                                ),
-                              ),
-                              Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 24.0,
-                                ),
-                                child: Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    AppText(
-                                      "Total",
-                                      style: AppFonts.reqularSubTitleWhite18
-                                          .copyWith(
-                                            color: const Color(0xff94A3B8),
-                                          ),
-                                    ),
-                                    Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.end,
-                                      children: [
-                                        AppText(
-                                          "\$${(cartCubit.total).toStringAsFixed(2)}",
-                                          style: AppFonts.boldSubTitleWhite18
-                                              .copyWith(
-                                                fontSize: 24,
-                                                height: 1,
-                                              ),
-                                        ),
-                                        AppText(
-                                          "Incl. all taxes",
-                                          style: AppFonts.reqularSubTitleWhite18
-                                              .copyWith(
-                                                color: const Color(0xff94A3B8),
-                                                fontSize: 11,
-                                              ),
-                                        ),
-                                      ],
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 24.0,
-                                  vertical: 16,
-                                ),
-                                child: ElevatedButton(
-                                  onPressed: isPlacingOrder
-                                      ? null
-                                      : () {
-                                          orderCubit.placeOrder(
-                                            cartCubit.cartItems,
-                                            cartCubit.subTotal,
-                                            cartCubit.total,
-                                            cartCubit.tax,
-                                          );
-                                        },
-                                  style: ElevatedButton.styleFrom(
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(15),
-                                    ),
-                                    backgroundColor: AppColors.goldDark,
-                                    disabledBackgroundColor: AppColors.goldDark
-                                        .withValues(alpha: 0.6),
-                                    shadowColor: AppColors.goldDark.withValues(
-                                      alpha: 0.5,
-                                    ),
-                                    elevation: 10,
-                                    minimumSize: const Size(
-                                      double.infinity,
-                                      56,
-                                    ),
-                                  ),
-                                  child: isPlacingOrder
-                                      ? const SizedBox(
-                                          width: 24,
-                                          height: 24,
-                                          child: CircularProgressIndicator(
-                                            strokeWidth: 2.5,
-                                            color: Colors.black,
-                                          ),
-                                        )
-                                      : Row(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.center,
-                                          children: [
-                                            AppText(
-                                              "Place Order",
-                                              style: AppFonts.subTitle.copyWith(
-                                                color: Colors.black,
-                                                fontWeight: FontWeight.bold,
-                                              ),
-                                            ),
-                                            const SizedBox(width: 8),
-                                            const Icon(
-                                              Icons.arrow_forward,
-                                              color: Colors.black,
-                                              size: 24,
-                                            ),
-                                          ],
-                                        ),
                                 ),
                               ),
                             ],
@@ -568,6 +355,50 @@ class _CartViewState extends State<CartView> {
             },
           );
         },
+      ),
+    );
+  }
+
+  Widget _summaryRow(String label, double amount, {bool isTotal = false}) {
+    final caption = AppFonts.reqularSubTitleWhite18.copyWith(
+      color: const Color(0xff94A3B8),
+      fontSize: isTotal ? 18 : 15,
+    );
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      child: Row(
+        children: [
+          Expanded(child: AppText(label, style: caption)),
+          const SizedBox(width: 12),
+          Flexible(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    '\$${amount.toStringAsFixed(2)}',
+                    textDirection: TextDirection.ltr,
+                    style: isTotal
+                        ? AppFonts.boldSubTitleWhite18.copyWith(
+                            fontSize: 24,
+                            height: 1,
+                          )
+                        : AppFonts.reqularSubTitleWhite18.copyWith(
+                            fontSize: 15,
+                          ),
+                  ),
+                ),
+                if (isTotal)
+                  AppText(
+                    'Incl. all taxes',
+                    textAlign: TextAlign.end,
+                    style: caption.copyWith(fontSize: 11),
+                  ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

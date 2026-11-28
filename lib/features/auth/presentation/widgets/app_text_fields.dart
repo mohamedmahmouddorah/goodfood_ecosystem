@@ -35,27 +35,26 @@ class _AppTextFieldsState extends State<AppTextFields> {
 
     return null;
   }
+
   String? validateName(String? value) {
-  if (value == null || value.trim().isEmpty) {
-    return 'Name is required';
+    if (value == null || value.trim().isEmpty) {
+      return 'Name is required';
+    }
+
+    final name = value.trim();
+
+    final nameRegex = RegExp(r'^[a-zA-Z\u0621-\u064A\s]+$');
+
+    if (!nameRegex.hasMatch(name)) {
+      return 'Name must contain letters only';
+    }
+
+    if (name.length < 3) {
+      return 'Name must be at least 3 characters';
+    }
+
+    return null;
   }
-
-  final name = value.trim();
-
-  final nameRegex = RegExp(
-    r'^[a-zA-Z\u0621-\u064A\s]+$',
-  );
-
-  if (!nameRegex.hasMatch(name)) {
-    return 'Name must contain letters only';
-  }
-
-  if (name.length < 3) {
-    return 'Name must be at least 3 characters';
-  }
-
-  return null;
-}
 
   @override
   void initState() {
@@ -66,13 +65,12 @@ class _AppTextFieldsState extends State<AppTextFields> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 88,
+      constraints: const BoxConstraints(minHeight: 88),
       width: double.infinity,
       child: TextFormField(
         controller: widget.cont,
         validator: widget.type == AppFieldsType.tableNo
             ? validateTableNo
-
             : widget.type == AppFieldsType.name
             ? validateName
             : (value) {
@@ -82,6 +80,10 @@ class _AppTextFieldsState extends State<AppTextFields> {
                         ? 'Username or Email is required'
                         : 'Password is required',
                   );
+                }
+                if (widget.type == AppFieldsType.username &&
+                    !RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$').hasMatch(value)) {
+                  return context.tr('Please enter a valid email address');
                 }
                 return null;
               },

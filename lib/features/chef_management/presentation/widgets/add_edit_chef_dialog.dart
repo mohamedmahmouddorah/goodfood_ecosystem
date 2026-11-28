@@ -1,3 +1,4 @@
+import 'package:goodfood_ecosystem/core/widgets/app_snack_bar.dart';
 import 'package:goodfood_ecosystem/core/localization/goodfood_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:goodfood_ecosystem/features/auth/data/model/user_model.dart';
@@ -5,14 +6,14 @@ import '../../../../core/constants/app_colors.dart';
 
 class AddEditChefDialog extends StatefulWidget {
   final UserModel? chefToEdit;
-  final ValueChanged<UserModel> onSave;
+  final Future<String?> Function(UserModel) onSave;
 
   const AddEditChefDialog({super.key, this.chefToEdit, required this.onSave});
 
   static Future<void> show(
     BuildContext context, {
     UserModel? chefToEdit,
-    required ValueChanged<UserModel> onSave,
+    required Future<String?> Function(UserModel) onSave,
   }) {
     return showModalBottomSheet(
       context: context,
@@ -33,6 +34,8 @@ class _AddEditChefDialogState extends State<AddEditChefDialog> {
   late TextEditingController _emailController;
   late TextEditingController _phoneController;
   late bool _isActive;
+  bool _saving = false;
+  String? _error;
 
   @override
   void initState() {
@@ -46,7 +49,7 @@ class _AddEditChefDialogState extends State<AddEditChefDialog> {
     _phoneController = TextEditingController(
       text: widget.chefToEdit?.phone ?? '',
     );
-    _isActive = widget.chefToEdit?.status == AccountStatus.Active ?? true;
+    _isActive = widget.chefToEdit?.status == AccountStatus.Active;
   }
 
   @override
@@ -57,7 +60,9 @@ class _AddEditChefDialogState extends State<AddEditChefDialog> {
     super.dispose();
   }
 
-  void _submit() {
+  Future<void> _submit() async {
+    if (_saving) return;
+    setState(() => _error = null);
     if (_formKey.currentState?.validate() ?? false) {
       final updatedChef = UserModel(
         uid:
@@ -74,8 +79,17 @@ class _AddEditChefDialogState extends State<AddEditChefDialog> {
         startDate: widget.chefToEdit?.startDate ?? DateTime.now(),
       );
 
-      widget.onSave(updatedChef);
-      Navigator.of(context).pop();
+      setState(() => _saving = true);
+      final error = await widget.onSave(updatedChef);
+      if (!mounted) return;
+      if (error == null) {
+        Navigator.of(context).pop();
+      } else {
+        setState(() {
+          _saving = false;
+          _error = error;
+        });
+      }
     }
   }
 
@@ -248,12 +262,17 @@ class _AddEditChefDialogState extends State<AddEditChefDialog> {
               ),
               const SizedBox(height: 26),
 
+              if (_error != null) ...[
+                AppInlineFeedback(_error!),
+                const SizedBox(height: 10),
+              ],
+
               // Submit Button
               SizedBox(
                 width: double.infinity,
                 height: 52,
                 child: ElevatedButton(
-                  onPressed: _submit,
+                  onPressed: _saving ? null : _submit,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primaryGold,
                     foregroundColor: AppColors.addChefText,

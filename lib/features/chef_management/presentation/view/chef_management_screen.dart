@@ -1,3 +1,4 @@
+import 'package:goodfood_ecosystem/core/widgets/app_snack_bar.dart';
 import 'package:goodfood_ecosystem/core/widgets/language_toggle.dart';
 import 'package:goodfood_ecosystem/core/localization/goodfood_localizations.dart';
 import 'package:flutter/material.dart';
@@ -107,40 +108,29 @@ class _ChefManagementView extends StatelessWidget {
           current.successMessage != null || current.errorMessage != null,
       listener: (context, state) {
         if (state.errorMessage != null) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              backgroundColor: AppColors.inactiveRed,
-              behavior: SnackBarBehavior.floating,
-              content: AppText(
-                state.errorMessage!,
-                style: const TextStyle(color: Colors.white),
-              ),
-            ),
+          if (ModalRoute.of(context)?.isCurrent == false) return;
+          showAppSnackBar(
+            context,
+            message: state.errorMessage!,
+            kind: FeedbackKind.error,
           );
           context.read<ChefCubit>().clearMessages();
         } else if (state.successMessage != null) {
           final isDelete =
               state.lastDeletedChef != null &&
               state.successMessage!.startsWith('Removed');
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              backgroundColor: const Color(0xFF1E212B),
-              behavior: SnackBarBehavior.floating,
-              duration: const Duration(seconds: 2),
-              content: AppText(
-                state.successMessage!,
-                style: const TextStyle(color: Colors.white),
-              ),
-              action: isDelete
-                  ? SnackBarAction(
-                      label: context.tr('UNDO'),
-                      textColor: AppColors.primaryGold,
-                      onPressed: () {
-                        context.read<ChefCubit>().undoDelete();
-                      },
-                    )
-                  : null,
-            ),
+          showAppSnackBar(
+            context,
+            message: state.successMessage!,
+            kind: FeedbackKind.success,
+            duration: const Duration(seconds: 2),
+            action: isDelete
+                ? SnackBarAction(
+                    label: 'UNDO',
+                    textColor: AppColors.primaryGold,
+                    onPressed: () => context.read<ChefCubit>().undoDelete(),
+                  )
+                : null,
           );
           context.read<ChefCubit>().clearMessages();
         }
@@ -151,6 +141,64 @@ class _ChefManagementView extends StatelessWidget {
 
         return Scaffold(
           backgroundColor: AppColors.background,
+          floatingActionButton: Padding(
+            padding: EdgeInsetsDirectional.only(
+              end: ((MediaQuery.sizeOf(context).width - 460) / 2).clamp(
+                0.0,
+                double.infinity,
+              ),
+            ),
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: () {
+                  AddEditChefDialog.show(
+                    context,
+                    onSave: (newChef) =>
+                        _saveChef(cubit, () => cubit.addChef(newChef)),
+                  );
+                },
+                borderRadius: BorderRadius.circular(28),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 22,
+                    vertical: 14,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppColors.addChefBtn,
+                    borderRadius: BorderRadius.circular(28),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.primaryGold.withValues(alpha: 0.35),
+                        blurRadius: 18,
+                        offset: const Offset(0, 6),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: const [
+                      Icon(
+                        Icons.person_add_alt_outlined,
+                        color: AppColors.addChefText,
+                        size: 20,
+                      ),
+                      SizedBox(width: 8),
+                      AppText(
+                        'Add Chef',
+                        style: TextStyle(
+                          color: AppColors.addChefText,
+                          fontSize: 14.5,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: -0.2,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
           body: Center(
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 460),
@@ -394,8 +442,10 @@ class _ChefManagementView extends StatelessWidget {
                                         AddEditChefDialog.show(
                                           context,
                                           chefToEdit: chef,
-                                          onSave: (updated) =>
-                                              cubit.updateChef(updated),
+                                          onSave: (updated) => _saveChef(
+                                            cubit,
+                                            () => cubit.updateChef(updated),
+                                          ),
                                         );
                                       },
                                       onToggleStatus: () =>
@@ -404,63 +454,6 @@ class _ChefManagementView extends StatelessWidget {
                                     );
                                   },
                                 ),
-
-                          // Floating "Add Chef" Button positioned on the bottom right
-                          Positioned(
-                            right: 16,
-                            bottom: 20,
-                            child: Material(
-                              color: Colors.transparent,
-                              child: InkWell(
-                                onTap: () {
-                                  AddEditChefDialog.show(
-                                    context,
-                                    onSave: (newChef) => cubit.addChef(newChef),
-                                  );
-                                },
-                                borderRadius: BorderRadius.circular(28),
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 22,
-                                    vertical: 14,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: AppColors.addChefBtn,
-                                    borderRadius: BorderRadius.circular(28),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: AppColors.primaryGold.withValues(
-                                          alpha: 0.35,
-                                        ),
-                                        blurRadius: 18,
-                                        offset: const Offset(0, 6),
-                                      ),
-                                    ],
-                                  ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: const [
-                                      Icon(
-                                        Icons.person_add_alt_outlined,
-                                        color: AppColors.addChefText,
-                                        size: 20,
-                                      ),
-                                      SizedBox(width: 8),
-                                      AppText(
-                                        'Add Chef',
-                                        style: TextStyle(
-                                          color: AppColors.addChefText,
-                                          fontSize: 14.5,
-                                          fontWeight: FontWeight.bold,
-                                          letterSpacing: -0.2,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
                         ],
                       ),
                     ),
@@ -472,5 +465,15 @@ class _ChefManagementView extends StatelessWidget {
         );
       },
     );
+  }
+
+  Future<String?> _saveChef(
+    ChefCubit cubit,
+    Future<void> Function() save,
+  ) async {
+    await save();
+    final error = cubit.state.errorMessage;
+    if (error != null) cubit.clearMessages();
+    return error;
   }
 }

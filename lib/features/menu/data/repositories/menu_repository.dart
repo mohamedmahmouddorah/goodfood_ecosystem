@@ -5,7 +5,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:path/path.dart' as p;
-import 'package:rxdart/rxdart.dart';
 
 import '../models/meal_model.dart';
 import '../services/meal_image_file_store.dart';
@@ -41,12 +40,14 @@ class MenuRepository {
     MealImageStorageService? imageStorage,
     MealImageFileStore? imageFileStore,
   }) : _cache = mealLocalCache,
-       _imageStorage = imageStorage ?? ImgBbMealImageStorageService(),
+       _providedImageStorage = imageStorage,
        _imageFileStore = imageFileStore ?? MealImageFileStore();
 
   final MenuRemoteService _service;
   final MealLocalCache? _cache;
-  final MealImageStorageService _imageStorage;
+  MealImageStorageService? _providedImageStorage;
+  MealImageStorageService get _imageStorage =>
+      _providedImageStorage ??= ImgBbMealImageStorageService();
   final MealImageFileStore _imageFileStore;
   Timer? _syncTimer;
   bool _isSyncing = false;
@@ -140,13 +141,10 @@ class MenuRepository {
     _localChanges.add(null);
   }
 
-  /// Cached menu is emitted first so screens can render while offline.
-  /// DebounceTime (300ms) is applied to avoid excessive stream emissions.
-  Stream<RemoteMealsSnapshot> watchAvailableMeals() {
-    return _watchAvailableMealsInternal().debounceTime(
-      const Duration(milliseconds: 300),
-    );
-  }
+  /// Deliver cache and server confirmations immediately. Debouncing a live
+  /// stream can starve the initial menu while metadata keeps changing.
+  Stream<RemoteMealsSnapshot> watchAvailableMeals() =>
+      _watchAvailableMealsInternal();
 
   Stream<RemoteMealsSnapshot> _watchAvailableMealsInternal() async* {
     try {
@@ -179,11 +177,7 @@ class MenuRepository {
     }
   }
 
-  Stream<List<MealModel>> watchAllMeals() {
-    return _watchAllMealsInternal().debounceTime(
-      const Duration(milliseconds: 300),
-    );
-  }
+  Stream<List<MealModel>> watchAllMeals() => _watchAllMealsInternal();
 
   Stream<List<MealModel>> _watchAllMealsInternal() async* {
     try {
@@ -490,7 +484,17 @@ class MenuRepository {
     final outbox = _outbox;
     final cache = _cache;
     if (outbox == null || cache == null) return remoteMeals;
-    final pending = await outbox.readPendingMutations();
+    List<PendingMealMutation> pending;
+    try {
+      pending = await outbox.readPendingMutations();
+    } catch (error, stack) {
+      // Local storage is an optional acceleration layer for remote reads.
+      // Never discard a valid Firestore snapshot because the outbox is broken.
+      debugPrint(
+        'Menu outbox overlay unavailable [${error.runtimeType}]\n$stack',
+      );
+      return remoteMeals;
+    }
     if (pending.isEmpty) return remoteMeals;
     final merged = {for (final meal in remoteMeals) meal.id: meal};
     for (final mutation in pending) {
@@ -547,6 +551,17 @@ class MenuRepository {
       'The Firebase menu index is not ready. Deploy the indexes and try again.',
     'not-found' => 'Meal not found.',
     _ => error.message ?? 'Something went wrong. Please try again.',
+  };
+
+  String _customerReadMessage(FirebaseException error) => switch (error.code) {
+    'permission-denied' =>
+      'Menu access was denied. Please contact the restaurant.',
+    'unauthenticated' => 'Please sign in to access the menu.',
+    'unavailable' =>
+      'The menu is offline. Check your connection and try again.',
+    'failed-precondition' =>
+      'The menu service needs configuration. Please contact the restaurant.',
+    _ => 'Could not load meals from Firebase. Please try again.',
   };
 
   String _syncErrorMessage(Object error) {
