@@ -5,7 +5,7 @@ import '../services/chef_remote_service.dart';
 
 abstract class ChefRepository {
   Stream<List<UserModel>> getChefsStream();
-  Future<void> addChef(UserModel chef);
+  Future<void> addChef(UserModel chef, {required String password});
   Future<void> updateChef(UserModel chef);
   Future<void> toggleStatus(String uid, AccountStatus newStatus);
   Future<void> deleteChef(String uid);
@@ -21,7 +21,8 @@ class ChefRepositoryImpl implements ChefRepository {
   Stream<List<UserModel>> getChefsStream() => _remoteService.getChefsStream();
 
   @override
-  Future<void> addChef(UserModel chef) => _remoteService.addChef(chef);
+  Future<void> addChef(UserModel chef, {required String password}) =>
+      _remoteService.addChef(chef, password: password);
 
   @override
   Future<void> updateChef(UserModel chef) => _remoteService.updateChef(chef);

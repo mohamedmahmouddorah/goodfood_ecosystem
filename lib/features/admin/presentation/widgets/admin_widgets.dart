@@ -7,9 +7,9 @@ import '../../../auth/presentation/view_model/auth_cubit.dart';
 import '../../../customer_order_management/data/models/order_model.dart';
 import '../view_model/admin_orders_cubit.dart';
 
-const adminBackground = Color(0xFF101010);
-const _surface = Color(0xFF1C1C1C);
-const adminBorder = Color(0xFF353535);
+const adminBackground = Color(0xFF0B1015);
+const _surface = Color(0xFF131922);
+const adminBorder = Color(0xFF1E2836);
 
 class AdminLogoutButton extends StatefulWidget {
   const AdminLogoutButton({super.key});

@@ -154,8 +154,8 @@ class _ChefManagementView extends StatelessWidget {
                 onTap: () {
                   AddEditChefDialog.show(
                     context,
-                    onSave: (newChef) =>
-                        _saveChef(cubit, () => cubit.addChef(newChef)),
+                    onSave: (newChef, password) =>
+                        _saveChef(cubit, () => cubit.addChef(newChef, password: password ?? '')) ,
                   );
                 },
                 borderRadius: BorderRadius.circular(28),
@@ -442,7 +442,7 @@ class _ChefManagementView extends StatelessWidget {
                                         AddEditChefDialog.show(
                                           context,
                                           chefToEdit: chef,
-                                          onSave: (updated) => _saveChef(
+                                          onSave: (updated, _) => _saveChef(
                                             cubit,
                                             () => cubit.updateChef(updated),
                                           ),

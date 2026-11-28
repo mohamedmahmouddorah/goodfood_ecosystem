@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
+import 'package:rxdart/rxdart.dart';
 
 import '../../customer_order_management/data/models/order_model.dart';
 
@@ -28,10 +29,36 @@ class AdminRepository implements AdminDataSource {
   @override
   Stream<String?> watchClaimedAdmin({bool refreshToken = false}) {
     var refreshPending = refreshToken;
-    return auth.idTokenChanges().asyncMap((user) {
-      final forceRefresh = refreshPending;
-      refreshPending = false;
-      return _checkAdmin(user, forceRefresh);
+    return auth.idTokenChanges().switchMap((user) {
+      if (user == null || user.isAnonymous) {
+        _log('result=${user == null ? 'signed-out' : 'anonymous'}');
+        return Stream<String?>.value(null);
+      }
+      final uid = user.uid;
+      // Keep the authorization boundary subscribed to the actual profile.
+      // A role/status update now revokes or restores access without requiring
+      // a logout/login cycle or a manual refresh.
+      return store.collection('users').doc(uid)
+          .snapshots(includeMetadataChanges: true)
+          .asyncMap((profile) async {
+            final forceRefresh = refreshPending;
+            refreshPending = false;
+            if (auth.currentUser?.uid != uid) return null;
+            final token = await user.getIdTokenResult(forceRefresh);
+            if (auth.currentUser?.uid != uid) return null;
+            final result = _profileResult(profile);
+            final hasClaim = token.claims?['admin'] == true;
+            _log('uid=$uid result=$result hasClaim=$hasClaim');
+            if (result == 'profile-verified' ||
+                (hasClaim && profile.data()?['status'] != 'Inactive')) {
+              return uid;
+            }
+            return null;
+          })
+          .handleError((Object error, StackTrace stack) {
+            _logProfileError(uid, error);
+            Error.throwWithStackTrace(error, stack);
+          });
     });
   }
 
@@ -47,13 +74,19 @@ class AdminRepository implements AdminDataSource {
 
     try {
       final token = await user.getIdTokenResult(forceRefresh);
-      if (auth.currentUser?.uid != uid || token.claims?['admin'] != true) {
+      if (auth.currentUser?.uid != uid) {
         return null;
       }
-      final profile = await store
-          .collection('users')
-          .doc(uid)
-          .get(const GetOptions(source: Source.server));
+
+      DocumentSnapshot<Map<String, dynamic>> profile;
+      try {
+        profile = await store
+            .collection('users')
+            .doc(uid)
+            .get(const GetOptions(source: Source.server));
+      } catch (_) {
+        profile = await store.collection('users').doc(uid).get();
+      }
 
       if (auth.currentUser?.uid != uid) {
         _log('uid=$uid result=identity-changed');
@@ -61,10 +94,19 @@ class AdminRepository implements AdminDataSource {
       }
 
       final result = _profileResult(profile);
+      final hasClaim = token.claims?['admin'] == true;
 
-      _log('uid=$uid result=$result');
+      _log('uid=$uid result=$result hasClaim=$hasClaim');
 
-      return result == 'profile-verified' ? uid : null;
+      // Admin access is granted if either:
+      // 1) The Firestore profile has role Admin and status Active
+      // 2) Or the Firebase Auth token contains the admin: true custom claim (and is not Inactive)
+      if (result == 'profile-verified' ||
+          (hasClaim && profile.data()?['status'] != 'Inactive')) {
+        return uid;
+      }
+
+      return null;
     } catch (error) {
       _logProfileError(uid, error);
       rethrow;
@@ -73,14 +115,21 @@ class AdminRepository implements AdminDataSource {
 
   String _profileResult(DocumentSnapshot<Map<String, dynamic>> profile) {
     final data = profile.data();
-    final role = data?['role'];
-    final status = data?['status'];
+    if (data == null) return 'profile-missing';
 
-    final result = data == null
-        ? 'profile-missing'
-        : role != 'Admin'
+    final role = data['role']?.toString().trim();
+    final status = data['status']?.toString().trim();
+
+    final isAdmin =
+        role != null && (role == 'Admin' || role.toLowerCase() == 'admin');
+    final isActive =
+        status == null ||
+        status == 'Active' ||
+        status.toLowerCase() == 'active';
+
+    final result = !isAdmin
         ? 'role-not-admin'
-        : status != 'Active'
+        : !isActive
         ? 'status-not-active'
         : 'profile-verified';
 
@@ -116,10 +165,6 @@ class AdminRepository implements AdminDataSource {
       .collection('users')
       .doc(uid)
       .snapshots(includeMetadataChanges: true)
-      .where(
-        (profile) =>
-            !profile.metadata.isFromCache && !profile.metadata.hasPendingWrites,
-      )
       .map((profile) {
         final data = profile.data();
         final name = data?['name'];
@@ -139,6 +184,5 @@ class AdminRepository implements AdminDataSource {
   Stream<List<OrderModel>> watchOrders() => store
       .collection('orders')
       .snapshots(includeMetadataChanges: true)
-      .where((snapshot) => !snapshot.metadata.isFromCache)
       .map((snapshot) => snapshot.docs.map(OrderModel.fromDocument).toList());
 }

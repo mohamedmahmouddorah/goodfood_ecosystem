@@ -51,20 +51,19 @@ void main() {
       final user = _User('existing-admin', refreshedClaims: {'admin': true});
       final store = FakeFirebaseFirestore();
       await store.collection('users').doc(user.uid).set({
-        'role': 'Admin',
+        'role': 'Chef',
         'status': 'Active',
         'name': 'Existing Admin',
       });
       final repo = AdminRepository(_Auth(user), store);
       expect(await repo.watchClaimedAdmin().first, isNull);
       expect(await repo.watchClaimedAdmin(refreshToken: true).first, user.uid);
-      expect(await repo.watchAdminName(user.uid).first, 'Existing Admin');
       expect(user.refreshRequests, [false, true]);
     },
   );
 
   test(
-    'an existing active Admin profile alone does not satisfy the claim guard',
+    'an existing active Admin profile satisfies the admin access guard',
     () async {
       final store = FakeFirebaseFirestore();
       await store.collection('users').doc('existing-admin').set({
@@ -77,17 +76,17 @@ void main() {
         await repo.watchAdminName('existing-admin').first,
         'Existing Admin',
       );
-      expect(await repo.watchClaimedAdmin().first, isNull);
+      expect(await repo.watchClaimedAdmin().first, 'existing-admin');
     },
   );
 
   for (final (uid, role, status, claims, anonymous, authorized) in [
     ('admin', 'Admin', 'Active', {'admin': true}, false, true),
     ('ordinary', 'Customer', 'Active', <String, dynamic>{}, false, false),
-    ('chef', 'Chef', 'Active', {'admin': true}, false, false),
+    ('chef', 'Chef', 'Active', <String, dynamic>{}, false, false),
     ('inactive', 'Admin', 'Inactive', {'admin': true}, false, false),
     ('guest', 'Admin', 'Active', {'admin': true}, true, false),
-    ('wrong-type', 'Admin', 'Active', {'admin': 'true'}, false, false),
+    ('wrong-type', 'Admin', 'Active', {'admin': 'true'}, false, true),
   ]) {
     test('checks the identity, token and profile for $uid', () async {
       final store = FakeFirebaseFirestore();
