@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:goodfood_ecosystem/core/localization/goodfood_localizations.dart';
@@ -243,7 +244,20 @@ void main() {
       });
       await tester.pumpAndSettle();
       expect(find.text('إجمالي الطلبات'), findsOneWidget);
-      expect(tester.takeException(), isNull);
+      for (final element in find.byType(Flex).evaluate()) {
+        final ro = element.renderObject as RenderFlex?;
+        if (ro != null && ro.hasSize) {
+          // check if ro child overflows
+        }
+      }
+      final ex = tester.takeException();
+      if (ex != null) {
+        for (final ro in tester.allRenderObjects.whereType<RenderFlex>()) {
+          // ignore: avoid_print
+          print('RENDERFLEX: ${ro.toStringShort()} | size: ${ro.hasSize ? ro.size : 'no size'} | creator: ${ro.debugCreator}');
+        }
+      }
+      expect(ex, isNull);
     },
   );
 }

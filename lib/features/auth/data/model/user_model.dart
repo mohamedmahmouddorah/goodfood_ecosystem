@@ -3,8 +3,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 enum Role { Admin, Chef }
 
 Role? toRole(String role) {
+  final normalized = role.trim().toLowerCase();
   for (var i in Role.values) {
-    if (i.name == role) {
+    if (i.name.toLowerCase() == normalized) {
       return i;
     }
   }
@@ -14,8 +15,9 @@ Role? toRole(String role) {
 enum AccountStatus { Active, Inactive }
 
 AccountStatus? toStatus(String status) {
+  final normalized = status.trim().toLowerCase();
   for (var i in AccountStatus.values) {
-    if (i.name == status) {
+    if (i.name.toLowerCase() == normalized) {
       return i;
     }
   }

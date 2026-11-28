@@ -6,14 +6,14 @@ import '../../../../core/constants/app_colors.dart';
 
 class AddEditChefDialog extends StatefulWidget {
   final UserModel? chefToEdit;
-  final Future<String?> Function(UserModel) onSave;
+  final Future<String?> Function(UserModel, String?) onSave;
 
   const AddEditChefDialog({super.key, this.chefToEdit, required this.onSave});
 
   static Future<void> show(
     BuildContext context, {
     UserModel? chefToEdit,
-    required Future<String?> Function(UserModel) onSave,
+    required Future<String?> Function(UserModel, String?) onSave,
   }) {
     return showModalBottomSheet(
       context: context,
@@ -33,6 +33,7 @@ class _AddEditChefDialogState extends State<AddEditChefDialog> {
   late TextEditingController _nameController;
   late TextEditingController _emailController;
   late TextEditingController _phoneController;
+  late TextEditingController _passwordController;
   late bool _isActive;
   bool _saving = false;
   String? _error;
@@ -49,6 +50,7 @@ class _AddEditChefDialogState extends State<AddEditChefDialog> {
     _phoneController = TextEditingController(
       text: widget.chefToEdit?.phone ?? '',
     );
+    _passwordController = TextEditingController();
     _isActive = widget.chefToEdit?.status == AccountStatus.Active;
   }
 
@@ -57,6 +59,7 @@ class _AddEditChefDialogState extends State<AddEditChefDialog> {
     _nameController.dispose();
     _emailController.dispose();
     _phoneController.dispose();
+    _passwordController.dispose();
     super.dispose();
   }
 
@@ -80,7 +83,7 @@ class _AddEditChefDialogState extends State<AddEditChefDialog> {
       );
 
       setState(() => _saving = true);
-      final error = await widget.onSave(updatedChef);
+      final error = await widget.onSave(updatedChef, _passwordController.text);
       if (!mounted) return;
       if (error == null) {
         Navigator.of(context).pop();
@@ -208,7 +211,20 @@ class _AddEditChefDialogState extends State<AddEditChefDialog> {
                   icon: Icons.phone_outlined,
                 ),
               ),
-              const SizedBox(height: 18),
+              if (!isEditing) ...[
+                const AppText('Password', style: TextStyle(color: AppColors.textMuted, fontSize: 13)),
+                const SizedBox(height: 6),
+                TextFormField(
+                  controller: _passwordController,
+                  obscureText: true,
+                  style: const TextStyle(color: Colors.white),
+                  decoration: _inputDecoration(hint: 'At least 6 characters', icon: Icons.lock_outline),
+                  validator: (value) => (value == null || value.length < 6)
+                      ? 'Password must be at least 6 characters'
+                      : null,
+                ),
+                const SizedBox(height: 18),
+              ],
 
               // Status Switch
               Container(

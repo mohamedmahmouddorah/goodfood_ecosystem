@@ -32,6 +32,7 @@ import 'features/menu/data/services/menu_cache_factory.dart';
 import 'features/menu/data/services/menu_remote_service.dart';
 import 'features/menu/presentation/view/menu_screen.dart';
 import 'features/orders/presentation/view/customer_orders_screen.dart';
+import 'features/ratings/presentation/view/customer_feedback_screen.dart';
 import 'features/orders/data/repositories/customer_orders_repository.dart';
 import 'features/orders/data/services/customer_order_tracking.dart';
 
@@ -117,6 +118,18 @@ class MyApp extends StatelessWidget {
                 auth.authStateChanges().map((user) => user?.uid),
             cancelOrder: (id, {reason}) =>
                 orders.cancelOrder(id, auth, reason: reason),
+            onRateMeal: (orderId, mealId) => Navigator.of(context).push(
+              MaterialPageRoute<bool>(
+                builder: (_) => CustomerFeedbackScreen(orderId: orderId),
+              ),
+            ),
+            onRateOrder: (orderId) async {
+              await Navigator.of(context).push<bool>(
+                MaterialPageRoute<bool>(
+                  builder: (_) => CustomerFeedbackScreen(orderId: orderId),
+                ),
+              );
+            },
             loadOrders: () => FirebaseEnvironment.useOwnedCustomerOrders
                 ? orders.watchSignedInCustomerOrders(auth)
                 : orders.watchTrackedOrders(

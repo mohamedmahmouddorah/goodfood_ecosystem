@@ -57,9 +57,9 @@ class ChefCubit extends Cubit<ChefState> {
     emit(state.copyWith(selectedFilter: filter));
   }
 
-  Future<void> addChef(UserModel chef) async {
+  Future<void> addChef(UserModel chef, {required String password}) async {
     try {
-      await _repository.addChef(chef);
+      await _repository.addChef(chef, password: password);
       emit(state.copyWith(
         successMessage: 'Chef "${chef.name}" saved to Firebase',
       ));
@@ -121,7 +121,7 @@ class ChefCubit extends Cubit<ChefState> {
   Future<void> undoDelete() async {
     final chef = state.lastDeletedChef;
     if (chef != null) {
-      await _repository.addChef(chef);
+      await _repository.updateChef(chef);
       emit(state.copyWith(
         successMessage: 'Restored "${chef.name}"',
         clearMessages: true,

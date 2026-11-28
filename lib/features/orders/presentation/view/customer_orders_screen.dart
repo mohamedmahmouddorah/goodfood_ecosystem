@@ -28,6 +28,7 @@ class CustomerOrdersScreen extends StatelessWidget {
     this.watchCustomerId,
     this.cancelOrder,
     this.onRateMeal,
+    this.onRateOrder,
   });
 
   final List<String> orderIds;
@@ -39,6 +40,7 @@ class CustomerOrdersScreen extends StatelessWidget {
 
   /// Open the rating screen with the Firestore order ID and saved meal ID.
   final void Function(String orderId, String mealId)? onRateMeal;
+  final Future<void> Function(String orderId)? onRateOrder;
 
   @override
   Widget build(BuildContext context) {
@@ -74,6 +76,7 @@ class CustomerOrdersScreen extends StatelessWidget {
           onNotificationsTap: onNotificationsTap,
           watchCustomerId: watchCustomerId,
           cancelOrder: cancelOrder,
+          onRateOrder: onRateOrder,
         ),
       ),
     );
@@ -86,12 +89,14 @@ class _OrdersView extends StatefulWidget {
     this.onNotificationsTap,
     this.watchCustomerId,
     this.cancelOrder,
+    this.onRateOrder,
   });
 
   final ValueChanged<OrderModel>? onOrderTap;
   final VoidCallback? onNotificationsTap;
   final Stream<String?> Function()? watchCustomerId;
   final Future<void> Function(String, {String? reason})? cancelOrder;
+  final Future<void> Function(String orderId)? onRateOrder;
 
   @override
   State<_OrdersView> createState() => _OrdersViewState();
@@ -101,6 +106,11 @@ class _OrdersViewState extends State<_OrdersView> {
   late Stream<String?>? _customerIds = widget.watchCustomerId?.call();
   final _submitted = <String>{};
   bool _confirming = false;
+  final Set<String> _handledRatingOrderIds = {};
+  final List<OrderModel> _ratingQueue = [];
+  bool _ratingRouteOpen = false;
+  bool _checkingRatings = false;
+  bool _ratingRefreshPending = false;
 
   @override
   void didUpdateWidget(covariant _OrdersView oldWidget) {
@@ -170,7 +180,13 @@ class _OrdersViewState extends State<_OrdersView> {
       }
     }
 
-    return Scaffold(
+    return BlocListener<OrdersCubit, OrdersState>(
+      listener: (context, state) {
+        if (state is OrdersLoadedState) {
+          _queueDeliveredOrders(state.orders);
+        }
+      },
+      child: Scaffold(
       backgroundColor: OrdersPalette.background,
       body: DecoratedBox(
         decoration: const BoxDecoration(
@@ -325,7 +341,54 @@ class _OrdersViewState extends State<_OrdersView> {
               height: 64,
               maxWidth: 1500,
             ),
+      ),
     );
+  }
+
+  Future<void> _queueDeliveredOrders(List<OrderModel> orders) async {
+    if (!mounted || widget.onRateOrder == null) return;
+    if (_checkingRatings) {
+      _ratingRefreshPending = true;
+      return;
+    }
+    _checkingRatings = true;
+    try {
+      final delivered = orders
+          .where((order) => order.status == OrderStatus.delivered && order.docId.isNotEmpty)
+          .toList()
+        ..sort((a, b) => a.createdAt.compareTo(b.createdAt));
+      for (final order in delivered) {
+        if (_handledRatingOrderIds.contains(order.docId)) continue;
+        final existing = await FirebaseEnvironment.store
+            .collection('ratings')
+            .doc(order.docId)
+            .get();
+        if (!mounted) return;
+        _handledRatingOrderIds.add(order.docId);
+        if (!existing.exists) _ratingQueue.add(order);
+      }
+    } catch (_) {
+      // Keep the orders screen usable if the optional rating lookup is unavailable.
+    } finally {
+      _checkingRatings = false;
+    }
+    if (_ratingRefreshPending && mounted) {
+      _ratingRefreshPending = false;
+      _queueDeliveredOrders(orders);
+    }
+    _openNextRating();
+  }
+
+  Future<void> _openNextRating() async {
+    if (!mounted || _ratingRouteOpen || _ratingQueue.isEmpty || widget.onRateOrder == null) return;
+    _ratingRouteOpen = true;
+    final order = _ratingQueue.removeAt(0);
+    try {
+      await widget.onRateOrder!(order.docId);
+    } finally {
+      _ratingRouteOpen = false;
+      if (mounted) _openNextRating();
+    }
   }
 
   Widget _header(BuildContext context, OrdersState state) {

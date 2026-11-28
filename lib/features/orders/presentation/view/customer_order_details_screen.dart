@@ -75,6 +75,21 @@ class CustomerOrderDetailsScreen extends StatelessWidget {
               ),
             ),
             ..._mealCards(order),
+            if (order.status == OrderStatus.delivered && onRateMeal != null) ...[
+              const SizedBox(height: 18),
+              SizedBox(
+                height: 50,
+                child: FilledButton.icon(
+                  style: FilledButton.styleFrom(
+                    backgroundColor: OrdersPalette.gold,
+                    foregroundColor: Colors.black,
+                  ),
+                  onPressed: () => onRateMeal!(order.docId, ''),
+                  icon: const Icon(Icons.star_rounded),
+                  label: const AppText('Rate this order'),
+                ),
+              ),
+            ],
           ],
         ),
       ),
@@ -112,31 +127,13 @@ class CustomerOrderDetailsScreen extends StatelessWidget {
     );
   }
 
-  List<Widget> _mealCards(OrderModel order) {
-    final canRate =
-        order.status == OrderStatus.ready ||
-        order.status == OrderStatus.delivered;
-    final rate = onRateMeal;
-    final mealIdsWithAction = <String>{};
-    final cards = <Widget>[];
-    for (final meal in order.meals) {
-      // A saved meal ID has one rating action even if it occurs on multiple lines.
-      final showRate = canRate && mealIdsWithAction.add(meal.mealId);
-      cards.add(
-        Padding(
-          padding: const EdgeInsets.only(top: 12),
-          child: _mealCard(
-            meal,
-            showRate: showRate,
-            onRate: rate == null || order.docId.isEmpty || meal.mealId.isEmpty
-                ? null
-                : () => rate(order.docId, meal.mealId),
-          ),
-        ),
-      );
-    }
-    return cards;
-  }
+  List<Widget> _mealCards(OrderModel order) => [
+    for (final meal in order.meals)
+      Padding(
+        padding: const EdgeInsets.only(top: 12),
+        child: _mealCard(meal, showRate: false, onRate: null),
+      ),
+  ];
 
   Widget _mealCard(
     OrderItemModel meal, {
