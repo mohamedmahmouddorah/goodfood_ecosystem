@@ -255,6 +255,7 @@ void main() {
 
     await tester.tap(find.text('Accept Order'));
     await tester.pump();
+    expect(find.byType(SnackBar), findsNothing);
     expect(
       tester.widget<FilledButton>(find.byType(FilledButton)).onPressed,
       isNull,
@@ -264,10 +265,14 @@ void main() {
     expect(find.text('Preparing'), findsOneWidget);
     expect(find.text('Assigned chef'), findsOneWidget);
     expect(find.text('Chef A'), findsOneWidget);
+    expect(find.text('Order accepted. Preparation started.'), findsOneWidget);
+    expect(find.byType(SnackBar), findsOneWidget);
     await tester.tap(find.text('Mark Ready'));
     await tester.pumpAndSettle();
     expect(find.text('Ready'), findsOneWidget);
     expect(find.byType(FilledButton), findsNothing);
+    expect(find.text('Order marked Ready.'), findsOneWidget);
+    expect(find.byType(SnackBar), findsOneWidget);
     expect(source.watches, 1);
     expect(tester.takeException(), isNull);
   });

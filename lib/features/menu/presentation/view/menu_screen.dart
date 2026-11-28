@@ -1,10 +1,8 @@
+import 'package:goodfood_ecosystem/core/widgets/app_snack_bar.dart';
 import 'package:goodfood_ecosystem/core/widgets/language_toggle.dart';
 import 'package:goodfood_ecosystem/core/localization/goodfood_localizations.dart';
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:goodfood_ecosystem/core/constants/app_colors.dart';
 import 'package:goodfood_ecosystem/core/constants/app_fonts.dart';
 import 'package:goodfood_ecosystem/features/customer_order_management/data/repositry/cart_repo.dart';
 import 'package:goodfood_ecosystem/features/customer_order_management/presentation/view/cart_view.dart';
@@ -55,14 +53,10 @@ class _MenuView extends StatefulWidget {
 
 class _MenuViewState extends State<_MenuView> {
   final _searchController = TextEditingController();
-  final _cartNotificationMessage = ValueNotifier<String>('');
-  Timer? _cartNotificationTimer;
 
   @override
   void dispose() {
     _searchController.dispose();
-    _cartNotificationTimer?.cancel();
-    _cartNotificationMessage.dispose();
     super.dispose();
   }
 
@@ -71,113 +65,17 @@ class _MenuViewState extends State<_MenuView> {
     return BlocListener<CartCubit, CartState>(
       listener: (context, state) {
         if (state is AddToCartFailState) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Row(
-                children: [
-                  Padding(
-                    padding: const EdgeInsetsDirectional.only(end: 16.0),
-                    child: Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(999),
-                        color: AppColors.errorIconBackground,
-                      ),
-                      child: Icon(
-                        Icons.error,
-                        size: 20,
-                        color: AppColors.errorIcon,
-                      ),
-                    ),
-                  ),
-                  Expanded(
-                    child: AppText(
-                      state.msg,
-                      style: AppFonts.mainTitle.copyWith(fontSize: 18),
-                    ),
-                  ),
-                ],
-              ),
-              backgroundColor: AppColors.errorBackground,
-              behavior: SnackBarBehavior.floating,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(15),
-                side: BorderSide(color: AppColors.errorBorder),
-              ),
-            ),
+          showAppSnackBar(
+            context,
+            message: state.msg,
+            kind: FeedbackKind.error,
           );
-        }
-        if (state is AddToCartSuccessState) {
-          ScaffoldMessenger.of(context)
-            ..hideCurrentSnackBar()
-            ..showSnackBar(
-              SnackBar(
-                content: Row(
-                  children: [
-                    Container(
-                      width: 42,
-                      height: 42,
-                      decoration: BoxDecoration(
-                        color: AppColors.goldLight,
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(
-                        Icons.check_rounded,
-                        size: 24,
-                        color: AppColors.addChefBtn,
-                      ),
-                    ),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          AppText(
-                            'Added to cart',
-                            style: AppFonts.mainTitle.copyWith(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                            ),
-                          ),
-                          const SizedBox(height: 3),
-                          AppText(
-                            '${state.item.mealName} added successfully!',
-                            style: AppFonts.mainTitle.copyWith(
-                              fontSize: 13,
-                              color: Colors.white70,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                backgroundColor: const Color(0xFF1C2522),
-                behavior: SnackBarBehavior.floating,
-                elevation: 8,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 14,
-                  vertical: 12,
-                ),
-                margin: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 14,
-                ),
-                duration: const Duration(seconds: 3),
-                dismissDirection: DismissDirection.horizontal,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  side: BorderSide(
-                    color: AppColors.goldLight.withValues(alpha: 0.35),
-                  ),
-                ),
-              ),
-            );
+        } else if (state is AddToCartSuccessState) {
+          showAppSnackBar(
+            context,
+            message: '${state.item.mealName} added successfully!',
+            kind: FeedbackKind.success,
+          );
         }
       },
       child: Scaffold(

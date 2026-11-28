@@ -1,3 +1,4 @@
+import 'package:goodfood_ecosystem/core/widgets/app_snack_bar.dart';
 import 'package:goodfood_ecosystem/core/firebase/firebase_environment.dart';
 import 'package:goodfood_ecosystem/core/widgets/language_toggle.dart';
 import 'package:goodfood_ecosystem/core/localization/goodfood_localizations.dart';
@@ -587,10 +588,9 @@ class OrderConfirmedView extends StatelessWidget {
         if (cubit.trackingWarning != null)
           Padding(
             padding: const EdgeInsets.only(bottom: 12),
-            child: AppText(
+            child: AppInlineFeedback(
               cubit.trackingWarning!,
-              style: const TextStyle(color: AppColors.goldLight),
-              textAlign: TextAlign.center,
+              kind: FeedbackKind.warning,
             ),
           ),
         ElevatedButton(

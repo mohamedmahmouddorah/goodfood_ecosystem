@@ -1,3 +1,4 @@
+import 'package:goodfood_ecosystem/core/widgets/app_snack_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/constants/app_colors.dart';
@@ -85,9 +86,15 @@ class _DashboardBody extends StatelessWidget {
             previous.noticeId != current.noticeId && current.notice != null,
         listener: (context, state) {
           if (ModalRoute.of(context)?.isCurrent == false) return;
-          ScaffoldMessenger.of(
+          showAppSnackBar(
             context,
-          ).showSnackBar(SnackBar(content: AppText(state.noticeMessage!)));
+            message: state.noticeMessage!,
+            kind: switch (state.notice) {
+              ChefNotice.accepted || ChefNotice.ready => FeedbackKind.success,
+              ChefNotice.conflict => FeedbackKind.warning,
+              _ => FeedbackKind.error,
+            },
+          );
         },
         builder: (context, state) {
           final cubit = context.read<ChefOrdersCubit>();
@@ -101,8 +108,11 @@ class _DashboardBody extends StatelessWidget {
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 1500),
               child: ListView.builder(
-                padding: EdgeInsets.all(
+                padding: EdgeInsets.fromLTRB(
                   MediaQuery.sizeOf(context).width >= 800 ? 28 : 20,
+                  20,
+                  MediaQuery.sizeOf(context).width >= 800 ? 28 : 20,
+                  84,
                 ),
                 itemCount:
                     1 +

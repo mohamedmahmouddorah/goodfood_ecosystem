@@ -1,8 +1,8 @@
+import 'package:goodfood_ecosystem/core/widgets/app_snack_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../constants/app_colors.dart';
 import '../localization/app_locale_cubit.dart';
-import '../localization/goodfood_localizations.dart';
 
 class LanguageToggle extends StatelessWidget {
   const LanguageToggle({super.key});
@@ -44,13 +44,14 @@ class LanguageToggle extends StatelessWidget {
                               await cubit.select(code);
                             } catch (_) {
                               if (!context.mounted) return;
-                              ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-                                SnackBar(
-                                  content: const AppText(
-                                    'Could not save language. Please try again.',
-                                  ),
-                                ),
-                              );
+                              if (ScaffoldMessenger.maybeOf(context) != null) {
+                                showAppSnackBar(
+                                  context,
+                                  message:
+                                      'Could not save language. Please try again.',
+                                  kind: FeedbackKind.error,
+                                );
+                              }
                             }
                           },
                           child: SizedBox(

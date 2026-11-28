@@ -55,7 +55,12 @@ class _MenuManagementView extends StatelessWidget {
         return BlocListener<MenuManagementCubit, MenuManagementState>(
           listenWhen: (previous, current) => current.message != null,
           listener: (context, state) {
-            showAppSnackBar(context, message: state.message!);
+            if (ModalRoute.of(context)?.isCurrent == false) return;
+            showAppSnackBar(
+              context,
+              message: state.message!,
+              kind: FeedbackKind.warning,
+            );
           },
           child: Scaffold(
             backgroundColor: MenuPalette.bg,
@@ -301,7 +306,14 @@ class _MenuManagementView extends StatelessWidget {
       ),
     );
     if (shouldDelete == true && context.mounted) {
-      await context.read<MenuManagementCubit>().delete(meal.id);
+      final result = await context.read<MenuManagementCubit>().delete(meal.id);
+      if (context.mounted && result == MealSaveResult.saved) {
+        showAppSnackBar(
+          context,
+          message: 'Meal deleted successfully.',
+          kind: FeedbackKind.success,
+        );
+      }
     }
   }
 }

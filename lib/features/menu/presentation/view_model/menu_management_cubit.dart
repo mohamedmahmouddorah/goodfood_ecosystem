@@ -144,19 +144,26 @@ class MenuManagementCubit extends Cubit<MenuManagementState> {
     await _runWrite<void>(() => _repo.setAvailability(id, value, meal: meal));
   }
 
-  Future<void> delete(String id) async {
+  Future<MealSaveResult> delete(String id) async {
     final meal = _find(id);
-    await _runWrite<void>(() => _repo.deleteMeal(id, meal: meal));
+    return _runWrite<void>(() => _repo.deleteMeal(id, meal: meal));
   }
 
   /// Add (empty id) or update.
-  Future<MealSaveResult> save(MealModel meal) => _runWrite<void>(() async {
-    if (meal.id.isEmpty) {
-      await _repo.addMeal(meal);
-    } else {
-      await _repo.updateMeal(meal);
-    }
-  }, notifyWhenQueued: false);
+  Future<MealSaveResult> save(
+    MealModel meal, {
+    void Function(String)? onFailure,
+  }) => _runWrite<void>(
+    () async {
+      if (meal.id.isEmpty) {
+        await _repo.addMeal(meal);
+      } else {
+        await _repo.updateMeal(meal);
+      }
+    },
+    notifyWhenQueued: false,
+    onFailure: onFailure,
+  );
 
   Future<MealSaveResult> updateMealImage(String id, String imageUrl) =>
       _runWrite<void>(() => _repo.updateMealImage(id, imageUrl));
@@ -182,6 +189,7 @@ class MenuManagementCubit extends Cubit<MenuManagementState> {
   Future<MealSaveResult> _runWrite<T>(
     Future<T> Function() operation, {
     bool notifyWhenQueued = true,
+    void Function(String)? onFailure,
   }) async {
     final write = operation();
     try {
@@ -202,10 +210,10 @@ class MenuManagementCubit extends Cubit<MenuManagementState> {
       _notify(_pendingMessage);
       return MealSaveResult.pending;
     } on MenuFailure catch (e) {
-      _notify(e.message);
+      (onFailure ?? _notify)(e.message);
       return MealSaveResult.failed;
     } on Exception catch (e) {
-      _notify(e.toString());
+      (onFailure ?? _notify)(e.toString());
       return MealSaveResult.failed;
     }
   }

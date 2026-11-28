@@ -1,3 +1,4 @@
+import 'package:goodfood_ecosystem/core/widgets/app_snack_bar.dart';
 import 'package:goodfood_ecosystem/core/localization/goodfood_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -27,9 +28,17 @@ class _SplashViewState extends State<SplashView> {
     return BlocListener<AuthCubit, AuthState>(
       listener: (context, state) {
         if (state is AuthSplashSuccessState) {
-          Navigator.pushNamedAndRemoveUntil(context, state.route, (route) => false);
+          Navigator.pushNamedAndRemoveUntil(
+            context,
+            state.route,
+            (route) => false,
+          );
         } else if (state is AuthSplashFailState) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: AppText(state.msg)));
+          showAppSnackBar(
+            context,
+            message: state.msg,
+            kind: FeedbackKind.error,
+          );
         }
       },
       child: Scaffold(
@@ -45,7 +54,9 @@ class _SplashViewState extends State<SplashView> {
             child: LayoutBuilder(
               builder: (context, constraints) {
                 final wide = constraints.maxWidth >= 800;
-                final scale = (constraints.maxWidth / 900).clamp(.9, 1.5).toDouble();
+                final scale = (constraints.maxWidth / 900)
+                    .clamp(.9, 1.5)
+                    .toDouble();
                 return Center(
                   child: SingleChildScrollView(
                     padding: EdgeInsets.all(wide ? 40 : 20),
@@ -59,7 +70,9 @@ class _SplashViewState extends State<SplashView> {
                       decoration: BoxDecoration(
                         color: const Color(0xD9001014),
                         borderRadius: BorderRadius.circular(30),
-                        border: Border.all(color: AppColors.cardBorder.withOpacity(.7)),
+                        border: Border.all(
+                          color: AppColors.cardBorder.withValues(alpha: .7),
+                        ),
                       ),
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
@@ -70,17 +83,27 @@ class _SplashViewState extends State<SplashView> {
                             width: 180 * scale,
                             height: 130 * scale,
                           ),
-                          AppText('GoodFood', style: AppFonts.mainTitle.copyWith(fontSize: 42 * scale)),
+                          AppText(
+                            'GoodFood',
+                            style: AppFonts.mainTitle.copyWith(
+                              fontSize: 42 * scale,
+                            ),
+                          ),
                           SizedBox(height: 5),
                           AppText(
                             'RESTAURANT',
-                            style: AppFonts.smallGoldTiltle.copyWith(fontSize: 14 * scale, letterSpacing: 3),
+                            style: AppFonts.smallGoldTiltle.copyWith(
+                              fontSize: 14 * scale,
+                              letterSpacing: 3,
+                            ),
                           ),
                           SizedBox(height: 24 * scale),
                           AppText(
                             'Good Food - Better Moments',
                             textAlign: TextAlign.center,
-                            style: AppFonts.subTitle.copyWith(fontSize: 19 * scale),
+                            style: AppFonts.subTitle.copyWith(
+                              fontSize: 19 * scale,
+                            ),
                           ),
                           SizedBox(height: 44 * scale),
                           SizedBox(
@@ -93,7 +116,12 @@ class _SplashViewState extends State<SplashView> {
                             ),
                           ),
                           SizedBox(height: 16 * scale),
-                          AppText('Loading...', style: AppFonts.subTitle.copyWith(fontSize: 16 * scale)),
+                          AppText(
+                            'Loading...',
+                            style: AppFonts.subTitle.copyWith(
+                              fontSize: 16 * scale,
+                            ),
+                          ),
                         ],
                       ),
                     ),

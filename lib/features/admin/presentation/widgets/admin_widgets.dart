@@ -1,3 +1,4 @@
+import 'package:goodfood_ecosystem/core/widgets/app_snack_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -23,8 +24,6 @@ class _AdminLogoutButtonState extends State<AdminLogoutButton> {
   Future<void> _logout() async {
     final auth = context.read<AuthCubit>();
     final navigator = Navigator.of(context, rootNavigator: true);
-    final messenger = ScaffoldMessenger.of(context);
-    final error = context.tr('Could not sign out.');
     setState(() => _busy = true);
     try {
       await auth.logout();
@@ -32,10 +31,13 @@ class _AdminLogoutButtonState extends State<AdminLogoutButton> {
         navigator.pushNamedAndRemoveUntil('/login', (_) => false);
       }
     } catch (_) {
-      if (messenger.mounted) {
-        messenger.showSnackBar(SnackBar(content: Text(error)));
-      }
-      if (mounted) setState(() => _busy = false);
+      if (!mounted) return;
+      showAppSnackBar(
+        context,
+        message: 'Could not sign out.',
+        kind: FeedbackKind.error,
+      );
+      setState(() => _busy = false);
     }
   }
 

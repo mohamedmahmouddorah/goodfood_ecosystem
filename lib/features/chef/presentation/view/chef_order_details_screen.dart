@@ -1,3 +1,4 @@
+import 'package:goodfood_ecosystem/core/widgets/app_snack_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -48,9 +49,16 @@ class ChefOrderDetailsScreen extends StatelessWidget {
         listenWhen: (previous, current) =>
             previous.noticeId != current.noticeId && current.notice != null,
         listener: (context, state) {
-          ScaffoldMessenger.of(
+          if (ModalRoute.of(context)?.isCurrent == false) return;
+          showAppSnackBar(
             context,
-          ).showSnackBar(SnackBar(content: AppText(state.noticeMessage!)));
+            message: state.noticeMessage!,
+            kind: switch (state.notice) {
+              ChefNotice.accepted || ChefNotice.ready => FeedbackKind.success,
+              ChefNotice.conflict => FeedbackKind.warning,
+              _ => FeedbackKind.error,
+            },
+          );
         },
         builder: (context, state) {
           if (state.status == ChefOrdersStatus.loading) {
@@ -92,7 +100,7 @@ class ChefOrderDetailsScreen extends StatelessWidget {
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 680),
               child: ListView(
-                padding: const EdgeInsets.all(20),
+                padding: const EdgeInsets.fromLTRB(20, 20, 20, 84),
                 children: [
                   _summary(context, order, cubit.source.assignmentName(order)),
                   const SizedBox(height: 12),

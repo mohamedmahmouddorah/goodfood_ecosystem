@@ -3,6 +3,55 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:goodfood_ecosystem/core/widgets/app_snack_bar.dart';
 
 void main() {
+  for (final width in [320.0, 1280.0]) {
+    testWidgets('floating feedback stays above fixed actions at $width', (
+      tester,
+    ) async {
+      tester.view.physicalSize = Size(width, 640);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      const bar = Key('fixed actions');
+      late BuildContext screen;
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            bottomNavigationBar: const SizedBox(key: bar, height: 150),
+            body: Builder(
+              builder: (context) {
+                screen = context;
+                return const SizedBox.shrink();
+              },
+            ),
+          ),
+        ),
+      );
+      showAppSnackBar(screen, message: 'First result');
+      showAppSnackBar(
+        screen,
+        message: 'Latest result',
+        kind: FeedbackKind.error,
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('First result'), findsNothing);
+      final snack = find.byType(SnackBar);
+      expect(snack, findsOneWidget);
+      expect(
+        tester.widget<SnackBar>(snack).behavior,
+        SnackBarBehavior.floating,
+      );
+      expect(
+        tester.getBottomLeft(snack).dy,
+        lessThanOrEqualTo(tester.getTopLeft(find.byKey(bar)).dy),
+      );
+      final surface = find
+          .descendant(of: snack, matching: find.byType(Material))
+          .first;
+      expect(tester.getSize(surface).width, lessThanOrEqualTo(560));
+      expect(tester.takeException(), isNull);
+    });
+  }
+
   testWidgets('snackbar content updates immediately from its listenable', (
     tester,
   ) async {

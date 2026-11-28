@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:goodfood_ecosystem/core/widgets/app_snack_bar.dart';
 import 'package:goodfood_ecosystem/core/firebase/firebase_environment.dart';
 import 'package:goodfood_ecosystem/core/widgets/language_toggle.dart';
 import 'package:goodfood_ecosystem/core/localization/goodfood_localizations.dart';
@@ -57,15 +59,12 @@ class CustomerOrdersScreen extends StatelessWidget {
               onOrderTap ??
               (order) {
                 final cubit = context.read<OrdersCubit>();
-                final customerIds = watchCustomerId?.call();
                 Navigator.of(context).push<void>(
                   MaterialPageRoute(
                     builder: (_) => BlocProvider.value(
                       value: cubit,
                       child: CustomerOrderDetailsScreen(
                         orderId: order.docId,
-                        customerIds: customerIds,
-                        cancelOrder: cancelOrder,
                         onRateMeal: onRateMeal,
                       ),
                     ),
@@ -73,17 +72,81 @@ class CustomerOrdersScreen extends StatelessWidget {
                 );
               },
           onNotificationsTap: onNotificationsTap,
+          watchCustomerId: watchCustomerId,
+          cancelOrder: cancelOrder,
         ),
       ),
     );
   }
 }
 
-class _OrdersView extends StatelessWidget {
-  const _OrdersView({this.onOrderTap, this.onNotificationsTap});
+class _OrdersView extends StatefulWidget {
+  const _OrdersView({
+    this.onOrderTap,
+    this.onNotificationsTap,
+    this.watchCustomerId,
+    this.cancelOrder,
+  });
 
   final ValueChanged<OrderModel>? onOrderTap;
   final VoidCallback? onNotificationsTap;
+  final Stream<String?> Function()? watchCustomerId;
+  final Future<void> Function(String, {String? reason})? cancelOrder;
+
+  @override
+  State<_OrdersView> createState() => _OrdersViewState();
+}
+
+class _OrdersViewState extends State<_OrdersView> {
+  late Stream<String?>? _customerIds = widget.watchCustomerId?.call();
+  final _submitted = <String>{};
+  bool _confirming = false;
+
+  @override
+  void didUpdateWidget(covariant _OrdersView oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.watchCustomerId != widget.watchCustomerId) {
+      _customerIds = widget.watchCustomerId?.call();
+    }
+  }
+
+  Future<void> _confirmCancellation(OrderModel order) async {
+    final cancel = widget.cancelOrder;
+    if (_confirming || _submitted.contains(order.docId) || cancel == null) {
+      return;
+    }
+    _confirming = true;
+    try {
+      final canceled = await showModalBottomSheet<bool>(
+        context: context,
+        backgroundColor: OrdersPalette.surface,
+        showDragHandle: false,
+        useSafeArea: true,
+        isScrollControlled: true,
+        isDismissible: false,
+        enableDrag: false,
+        builder: (_) => _CancellationSheet(
+          orderTitle: _orderTitle(order),
+          onCancel: (reason) => cancel(order.docId, reason: reason),
+        ),
+      );
+      if (canceled != true || !mounted) return;
+      setState(() => _submitted.add(order.docId));
+      showAppSnackBar(
+        context,
+        message: 'Order cancelled successfully',
+        kind: FeedbackKind.success,
+      );
+    } finally {
+      _confirming = false;
+    }
+  }
+
+  String _orderTitle(OrderModel order) {
+    final title = order.dispId;
+    if (title.isEmpty) return 'Order';
+    return title.startsWith('#') ? title : '#$title';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -141,66 +204,107 @@ class _OrdersView extends StatelessWidget {
                 child: Center(
                   child: ConstrainedBox(
                     constraints: const BoxConstraints(maxWidth: 1100),
-                    child: BlocBuilder<OrdersCubit, OrdersState>(
-                      builder: (context, state) {
-                        final orders = state is OrdersLoadedState
-                            ? state.visibleOrders
-                            : <OrderModel>[];
-                        return ListView.builder(
-                          padding: EdgeInsets.all(wide ? 32 : 20),
-                          itemCount: 1 + (orders.isEmpty ? 1 : orders.length),
-                          itemBuilder: (context, index) {
-                            if (index == 0) return _header(context, state);
-                            if (state is OrdersInitialState ||
-                                state is OrdersLoadingState) {
-                              return const Padding(
-                                padding: EdgeInsets.all(48),
-                                child: Center(
-                                  child: CircularProgressIndicator(
-                                    color: AppColors.primaryGold,
-                                    semanticsLabel: 'Loading orders',
+                    child: StreamBuilder<String?>(
+                      stream: _customerIds,
+                      builder: (context, identity) =>
+                          BlocBuilder<OrdersCubit, OrdersState>(
+                            builder: (context, state) {
+                              final orders = state is OrdersLoadedState
+                                  ? state.visibleOrders
+                                  : <OrderModel>[];
+                              return Column(
+                                children: [
+                                  Expanded(
+                                    child: ListView.builder(
+                                      padding: EdgeInsets.all(wide ? 32 : 20),
+                                      itemCount:
+                                          1 +
+                                          (orders.isEmpty ? 1 : orders.length),
+                                      itemBuilder: (context, index) {
+                                        if (index == 0) {
+                                          return _header(context, state);
+                                        }
+                                        if (state is OrdersInitialState ||
+                                            state is OrdersLoadingState) {
+                                          return const Padding(
+                                            padding: EdgeInsets.all(48),
+                                            child: Center(
+                                              child: CircularProgressIndicator(
+                                                color: AppColors.primaryGold,
+                                                semanticsLabel:
+                                                    'Loading orders',
+                                              ),
+                                            ),
+                                          );
+                                        }
+                                        if (state is OrdersErrorState) {
+                                          return _OrdersMessage(
+                                            icon: Icons.cloud_off_outlined,
+                                            title: 'Unable to load orders',
+                                            message: state.message,
+                                            action: OutlinedButton.icon(
+                                              onPressed: context
+                                                  .read<OrdersCubit>()
+                                                  .load,
+                                              icon: const Icon(Icons.refresh),
+                                              label: const AppText('Try again'),
+                                            ),
+                                          );
+                                        }
+                                        if (orders.isEmpty) {
+                                          return _OrdersMessage(
+                                            icon: state.tab == OrdersTab.active
+                                                ? Icons.receipt_long_outlined
+                                                : Icons.history,
+                                            title: state.tab == OrdersTab.active
+                                                ? 'No active orders'
+                                                : 'No order history yet',
+                                            message:
+                                                state.tab == OrdersTab.active
+                                                ? 'Your current orders will appear here.'
+                                                : 'Delivered and cancelled orders will appear here.',
+                                          );
+                                        }
+                                        final order = orders[index - 1];
+                                        return Padding(
+                                          padding: const EdgeInsets.only(
+                                            bottom: 16,
+                                          ),
+                                          child: OrderCard(
+                                            order: order,
+                                            onTap: widget.onOrderTap == null
+                                                ? null
+                                                : () =>
+                                                      widget.onOrderTap!(order),
+                                            onCancel:
+                                                _customerIds != null &&
+                                                    widget.cancelOrder !=
+                                                        null &&
+                                                    identity.connectionState !=
+                                                        ConnectionState
+                                                            .waiting &&
+                                                    identity.data != null &&
+                                                    order.customerId ==
+                                                        identity.data &&
+                                                    order.status ==
+                                                        OrderStatus.pending &&
+                                                    order.isUnassigned &&
+                                                    !_submitted.contains(
+                                                      order.docId,
+                                                    )
+                                                ? () => _confirmCancellation(
+                                                    order,
+                                                  )
+                                                : null,
+                                          ),
+                                        );
+                                      },
+                                    ),
                                   ),
-                                ),
+                                ],
                               );
-                            }
-                            if (state is OrdersErrorState) {
-                              return _OrdersMessage(
-                                icon: Icons.cloud_off_outlined,
-                                title: 'Unable to load orders',
-                                message: state.message,
-                                action: OutlinedButton.icon(
-                                  onPressed: context.read<OrdersCubit>().load,
-                                  icon: const Icon(Icons.refresh),
-                                  label: const AppText('Try again'),
-                                ),
-                              );
-                            }
-                            if (orders.isEmpty) {
-                              return _OrdersMessage(
-                                icon: state.tab == OrdersTab.active
-                                    ? Icons.receipt_long_outlined
-                                    : Icons.history,
-                                title: state.tab == OrdersTab.active
-                                    ? 'No active orders'
-                                    : 'No order history yet',
-                                message: state.tab == OrdersTab.active
-                                    ? 'Your current orders will appear here.'
-                                    : 'Delivered and cancelled orders will appear here.',
-                              );
-                            }
-                            final order = orders[index - 1];
-                            return Padding(
-                              padding: const EdgeInsets.only(bottom: 16),
-                              child: OrderCard(
-                                order: order,
-                                onTap: onOrderTap == null
-                                    ? null
-                                    : () => onOrderTap!(order),
-                              ),
-                            );
-                          },
-                        );
-                      },
+                            },
+                          ),
                     ),
                   ),
                 ),
@@ -277,11 +381,11 @@ class _OrdersView extends StatelessWidget {
               const LanguageToggle(),
               IconButton(
                 tooltip: context.tr(
-                  onNotificationsTap == null
+                  widget.onNotificationsTap == null
                       ? 'Notifications unavailable'
                       : 'Notifications',
                 ),
-                onPressed: onNotificationsTap,
+                onPressed: widget.onNotificationsTap,
                 icon: const Icon(Icons.notifications_none_rounded),
               ),
             ],
@@ -399,6 +503,162 @@ class _OrdersMessage extends StatelessWidget {
           ),
           if (action != null) ...[const SizedBox(height: 20), action!],
         ],
+      ),
+    );
+  }
+}
+
+class _CancellationSheet extends StatefulWidget {
+  const _CancellationSheet({required this.orderTitle, required this.onCancel});
+
+  final String orderTitle;
+  final Future<void> Function(String reason) onCancel;
+
+  @override
+  State<_CancellationSheet> createState() => _CancellationSheetState();
+}
+
+class _CancellationSheetState extends State<_CancellationSheet> {
+  final _reason = TextEditingController();
+  bool _busy = false;
+  String? _error;
+  FeedbackKind _errorKind = FeedbackKind.error;
+
+  @override
+  void dispose() {
+    _reason.dispose();
+    super.dispose();
+  }
+
+  Future<void> _cancel() async {
+    if (_busy) return;
+    FocusScope.of(context).unfocus();
+    setState(() {
+      _busy = true;
+      _error = null;
+      _errorKind = FeedbackKind.error;
+    });
+    try {
+      await widget.onCancel(_reason.text.trim());
+      if (mounted) Navigator.of(context).pop(true);
+      return;
+    } on OrderCancellationException catch (error) {
+      _error = error.message;
+      _errorKind = FeedbackKind.warning;
+    } on FirebaseException catch (error) {
+      _error = switch (error.code) {
+        'permission-denied' ||
+        'unauthenticated' => 'You do not have permission to cancel this order.',
+        'unavailable' ||
+        'deadline-exceeded' => 'Check your connection and try again.',
+        'aborted' => 'The order changed. Check its status and try again.',
+        _ => 'Unable to cancel this order. Please try again.',
+      };
+    } catch (_) {
+      _error = 'Unable to cancel this order. Please try again.';
+    }
+    if (mounted) setState(() => _busy = false);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return PopScope(
+      canPop: !_busy,
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.viewInsetsOf(context).bottom,
+          ),
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Align(
+                  alignment: AlignmentDirectional.centerStart,
+                  child: Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: AppColors.inactiveRed.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(
+                      Icons.delete_outline_rounded,
+                      color: AppColors.inactiveRed,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                AppText(
+                  'Cancel Order?',
+                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                    color: AppColors.textWhite,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                const AppText(
+                  'Are you sure you want to cancel this order? This action cannot be undone.',
+                  style: TextStyle(color: OrdersPalette.muted),
+                ),
+                const SizedBox(height: 12),
+                AppText(
+                  widget.orderTitle,
+                  style: const TextStyle(color: OrdersPalette.gold),
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: _reason,
+                  enabled: !_busy,
+                  minLines: 2,
+                  maxLines: 3,
+                  maxLength: 200,
+                  style: const TextStyle(color: AppColors.textWhite),
+                  decoration: InputDecoration(
+                    labelText: context.tr('Reason for cancellation (Optional)'),
+                    hintText: context.tr('Tell us why you want to cancel...'),
+                    labelStyle: const TextStyle(color: OrdersPalette.muted),
+                    hintStyle: const TextStyle(color: OrdersPalette.muted),
+                    counterStyle: const TextStyle(color: OrdersPalette.muted),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+                if (_error != null) ...[
+                  const SizedBox(height: 8),
+                  AppInlineFeedback(_error!, kind: _errorKind),
+                ],
+                const SizedBox(height: 16),
+                OutlinedButton(
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.textWhite,
+                    side: const BorderSide(color: OrdersPalette.muted),
+                    minimumSize: const Size.fromHeight(48),
+                  ),
+                  onPressed: _busy ? null : () => Navigator.pop(context),
+                  child: const AppText('Keep Order'),
+                ),
+                const SizedBox(height: 8),
+                FilledButton(
+                  style: FilledButton.styleFrom(
+                    backgroundColor: AppColors.inactiveRed,
+                    foregroundColor: AppColors.textWhite,
+                    minimumSize: const Size.fromHeight(48),
+                  ),
+                  onPressed: _busy ? null : _cancel,
+                  child: _busy
+                      ? const SizedBox.square(
+                          dimension: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const AppText('Yes, Cancel Order'),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }

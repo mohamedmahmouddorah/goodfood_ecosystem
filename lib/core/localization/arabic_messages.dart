@@ -23,16 +23,19 @@ const arabicMessages = <String, String>{
   'Order Details': 'تفاصيل الطلب',
   'Order Items': 'عناصر الطلب',
   'Rate Meal': 'قيّم الوجبة',
+  'Remove Meal': 'حذف الوجبة',
   'Cancel Order': 'إلغاء الطلب',
-  'Cancel Order?': 'هل تريد إلغاء الطلب؟',
+  'Cancel Order?': 'إلغاء الطلب؟',
   'Are you sure you want to cancel this order? This action cannot be undone.':
-      'هل أنت متأكد من إلغاء هذا الطلب؟ لا يمكن التراجع عن هذا الإجراء.',
-  'Keep Order': 'الإبقاء على الطلب',
-  'Yes, Cancel Order': 'نعم، إلغاء الطلب',
-  'Order cancelled successfully.': 'تم إلغاء الطلب بنجاح.',
-  'Reason for cancellation (Optional)': 'سبب الإلغاء (اختياري)',
-  'Tell us why you want to cancel...': 'قول لنا ليه عايز تلغي الطلب...',
+      'هل أنت متأكد من إلغاء الطلب؟ لا يمكن التراجع عن الإلغاء.',
+  'Keep Order': 'الاحتفاظ بالطلب',
+  'Yes, Cancel Order': 'تأكيد إلغاء الطلب',
+  'Order cancelled successfully': 'تم إلغاء الطلب بنجاح',
+  'Reason for cancellation (Optional)': 'سبب إلغاء الطلب (اختياري)',
+  'Tell us why you want to cancel...': 'اكتب سبب الإلغاء لو حابب...',
   'Cancellation reason': 'سبب الإلغاء',
+  'Cancellation Reason': 'سبب الإلغاء',
+  'No reason provided': 'لم يتم تحديد سبب',
   'Cancellation reason must be 200 characters or fewer.':
       'سبب الإلغاء لازم يكون ٢٠٠ حرف أو أقل.',
   'This order is unavailable.': 'هذا الطلب غير متاح.',
@@ -334,6 +337,8 @@ const arabicMessages = <String, String>{
       'تعذّر حفظ الصورة. تحقق من مساحة الجهاز وحاول مجددًا.',
   'Could not save the meal. Check Firebase setup and try again.':
       'تعذّر حفظ الوجبة. تحقق من إعداد Firebase وحاول مجددًا.',
+  'Meal updated successfully.': 'تم تحديث الوجبة.',
+  'Meal deleted successfully.': 'تم حذف الوجبة.',
   'Meal added successfully.': 'تمت إضافة الوجبة.',
   'Product changes synced with Firebase.':
       'تمت مزامنة تغييرات المنتج مع Firebase.',
@@ -389,6 +394,10 @@ const arabicMessages = <String, String>{
       'استغرق الطلب وقتًا طويلًا. حاول مجددًا.',
   'Too many requests. Please try again later.': 'طلبات كثيرة. حاول لاحقًا.',
   'Something went wrong. Please try again.': 'حدث خطأ. حاول مجددًا.',
+  'Guest sign-in is unavailable. Please contact support.':
+      'الدخول كضيف غير متاح حاليًا. تواصل مع الدعم.',
+  'Could not sign in to place your order. Please try again.':
+      'تعذّر تسجيل الدخول لإرسال طلبك. حاول مجددًا.',
   'Unable to initialize the app. Please try again.':
       'تعذّر تشغيل التطبيق. حاول مجددًا.',
   'Payment failed': 'تعذّر الدفع',
